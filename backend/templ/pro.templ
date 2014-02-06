@@ -1,0 +1,81 @@
+<link rel="stylesheet" type="text/css" href="/oj/pro.css">
+
+<script type="text/javascript">
+    function init(){
+	var j_cont = $('#cont');
+
+	PDFJS.getDocument('/oj/problem/6/cont.pdf').then(function(pdf){
+	    var i;
+
+	    for(i = 26;i < /*pdf.numPages*/30;i++){
+		pdf.getPage(i + 1).then(function(idx){return function(page){
+		    var j_canvas = $('<canvas style="width:100%; margin-bottom:16px; display:block;"></canvas>');;
+		    var j_div = $('<div></div>');
+		    var ctx = j_canvas[0].getContext('2d');
+		    var offset;
+		    var viewport;
+
+		    j_cont.append(j_canvas);
+
+		    offset = j_canvas.offset();
+		    viewport = page.getViewport(
+			j_canvas.width() / page.getViewport(1.0).width);
+		    
+		    j_canvas.attr('width',viewport.width);
+		    j_canvas.attr('height',viewport.height);
+
+		    j_div.addClass('textlayer');
+		    j_div.css('width',viewport.width);
+		    j_div.css('height',viewport.height);
+		    j_div.offset({'top':offset.top,'left':offset.left});
+
+		    j_cont.append(j_div);
+
+		    page.getTextContent().then(function(text){
+			var textlayer = new TextLayerBuilder({
+			    'textLayerDiv': j_div[0],
+			    'pageIndex':idx
+			});
+
+			textlayer.setTextContent(text);
+
+			page.render({
+			    'canvasContext':ctx,
+			    'viewport':viewport,
+			    'textLayer':textlayer
+			});
+		    });
+		};}(i + 1));
+	    }
+	});
+    }
+</script>
+
+<div id="side" class="g-lg-2 blk-cont">
+    <h3>{{ pro['pro_id']}} / {{ pro['name'] }}</h3>
+    <a class="btn-pri" href="/oj/submit/{{ pro['pro_id'] }}/">Submit</a>
+    <table>
+	<thead>
+	    <tr>
+		<th>Key</th>
+		<th>Value</th>
+	    </tr>
+	</thead>
+	<tbody>
+	    <tr>
+		<td>Solved</td>
+		<td>10</td>
+	    </tr>
+	    <tr>
+		<td>Tried</td>
+		<td>10</td>
+	    </tr>
+	    <tr>
+		<td>Score</td>
+		<td>290</td>
+	    </tr>
+	</tbody>
+    </table>
+</div>
+<div id="cont" class="g-lg-10">
+</div>

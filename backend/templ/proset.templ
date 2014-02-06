@@ -1,24 +1,30 @@
-<link rel="stylesheet" type="text/css" href="/oj/probset.css">
+<link rel="stylesheet" type="text/css" href="/oj/proset.css">
 
 <script type="text/javascript">
     function init(){
     }
 </script>
 
-<div id="problist" class="g-lg-8 g-off-lg-2">
+<div id="prolist" class="g-lg-8 g-off-lg-2">
     <div class="g-r head">
-        <div class="g-lg-1">#</div>
-        <div class="g-lg-2">State</div>
-        <div class="g-lg-6">Problem Name</div>
-        <div class="g-lg-3">Score</div>
+        <div class="g-sm-1">#</div>
+        <div class="g-sm-2">State</div>
+        <div class="g-sm-5">Problem Name</div>
+        <div class="g-sm-2">Score</div>
+        <div class="g-sm-2">Ratio</div>
     </div>
-{% for i in range(40) %}
+{% for pro in prolist %}
     <div class="g-r item">
-        <div class="g-lg-1 id">{{ i + 1 }}</div>
-        <div class="g-lg-2 state accept">solved</div>
-        <div class="g-lg-6 name">Test</div>
-        <div class="g-lg-3 score">
-            <span class="get">290</span> / <span class="total">300</span>
+        <div class="g-sm-1 id">{{ pro['pro_id'] }}</div>
+        <div class="g-sm-2 state solve">solved</div>
+	<div class="g-sm-5 name">
+	    <a href="/oj/pro/{{ pro['pro_id'] }}/">{{ pro['name'] }}</a>
+	</div>
+        <div class="g-sm-2 score">
+	    <span>290</span>
+	</div>
+	<div class="g-sm-2 ratio">
+	    <span>21</span> / <span class="light">32</span>
         </div>
     </div>
 {% end %}

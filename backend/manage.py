@@ -8,8 +8,15 @@ from pro import ProService
 class ManageHandler(RequestHandler):
     @reqenv
     def get(self,page = 'dash'):
-        if page == 'pro':
-            self.render('manage-pro',page = page)
+        if page == 'dash':
+            self.render('manage-dash',page = page)
+            return
+
+        elif page == 'pro':
+            err,prolist = yield from ProService.inst.list_pro(
+                    ProService.STATUS_OFFLINE)
+
+            self.render('manage-pro',page = page,prolist = prolist)
             return
 
         elif page == 'addpro':

@@ -15,7 +15,9 @@ from req import RequestHandler
 from req import reqenv
 from user import UserService
 from pro import ProService
-from proset import ProsetHandler
+from pro import ProsetHandler
+from pro import ProHandler
+from pro import SubmitHandler
 from manage import ManageHandler
 from pack import PackHandler
 from pack import PackService
@@ -116,6 +118,8 @@ if __name__ == '__main__':
         ('/acct',AcctHandler,args),
         ('/proset',ProsetHandler,args),
         ('/proset/(.*)',ProsetHandler,args),
+        ('/pro/(.*)',ProHandler,args),
+        ('/submit/(.*)',SubmitHandler,args),
         ('/manage',ManageHandler,args),
         ('/manage/(.*)',ManageHandler,args),
         ('/pack',PackHandler,args)

@@ -20,24 +20,20 @@
 	    </tr>
 	</thead>
 	<tbody>
+	{% for pro in prolist %}
 	    <tr>
-		<td>1</td>
-		<td>test</td>
+		<td>{{ pro['pro_id'] }}</td>
+		<td>{{ pro['name'] }}</td>
+	    {% if pro['status'] == 0 %}
 		<td class="status-online">Online</td>
-		<td><a class="btn-def">&#x2699</a></td>
-	    </tr>
-	    <tr>
-		<td>1</td>
-		<td>test</td>
+	    {% elif pro['status'] == 0 %}
 		<td class="status-hidden">Hidden</td>
-		<td><a class="btn-def">&#x2699</a></td>
-	    </tr>
-	    <tr>
-		<td>1</td>
-		<td>test</td>
+	    {% elif pro['status'] == 0 %}
 		<td class="status-offline">Offline</td>
+	    {% end %}
 		<td><a class="btn-def">&#x2699</a></td>
 	    </tr>
+	{% end %}
 	</tbody>
     </table>
 {% end %}
