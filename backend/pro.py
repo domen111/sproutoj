@@ -1,3 +1,4 @@
+import os
 import tornado.process
 import tornado.concurrent
 
@@ -72,8 +73,7 @@ class ProService:
         pro_id = cur.fetchone()[0]
 
         if pack_token != None:
-            err,ret = yield PackService.inst.unpack(
-                    pack_token,'problem/%d'%pro_id,True)
+            err,ret = yield from self._unpack_pro(pro_id,pack_token)
             if err:
                 return (err,None)
 
@@ -98,11 +98,21 @@ class ProService:
             return ('Eunk',None)
 
         if pack_token != None:
-            err,ret = yield PackService.inst.unpack(
-                    pack_token,'problem/%d'%pro_id,True)
+            err,ret = yield from self._unpack_pro(pro_id,pack_token)
             if err:
                 return (err,None)
+        
+        return (None,None)
 
+    def _unpack_pro(self,pro_id,pack_token):
+        err,ret = yield PackService.inst.unpack(
+                pack_token,'problem/%d'%pro_id,True)
+        if err:
+            return (err,None)
+
+        os.chmod('problem/%d'%pro_id,0o755)
+        os.symlink(os.path.abspath('problem/%d/http'%pro_id),
+                '../http/problem/%d'%pro_id)
         return (None,None)
 
 class ProsetHandler(RequestHandler):

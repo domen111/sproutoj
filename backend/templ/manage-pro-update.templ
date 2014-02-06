@@ -1,0 +1,39 @@
+{% extends 'manage.templ' %}
+{% block head %}
+<link rel="stylesheet" type="text/css" href="/oj/manage-pro.css">
+
+<script type="text/javascript" id="contjs">
+    function init(){
+	var j_prolist = $('#prolist');
+    }
+</script>
+{% end %}
+{% block content %}
+    <a class="btn btn-pri" href="/oj/manage/addpro/">Add Problem</a>
+    <table id="prolist">
+	<thead>
+	    <tr>
+		<th>#</th>
+		<th>Problem Name</th>
+		<th>Status</th>
+		<th></th>
+	    </tr>
+	</thead>
+	<tbody>
+	{% for pro in prolist %}
+	    <tr>
+		<td>{{ pro['pro_id'] }}</td>
+		<td>{{ pro['name'] }}</td>
+	    {% if pro['status'] == 0 %}
+		<td class="status-online">Online</td>
+	    {% elif pro['status'] == 0 %}
+		<td class="status-hidden">Hidden</td>
+	    {% elif pro['status'] == 0 %}
+		<td class="status-offline">Offline</td>
+	    {% end %}
+		<td><a class="btn-def">&#x2699</a></td>
+	    </tr>
+	{% end %}
+	</tbody>
+    </table>
+{% end %}

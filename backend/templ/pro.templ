@@ -4,10 +4,11 @@
     function init(){
 	var j_cont = $('#cont');
 
-	PDFJS.getDocument('/oj/problem/6/cont.pdf').then(function(pdf){
+	PDFJS.getDocument(
+		'/oj/problem/{{ pro['pro_id'] }}/cont.pdf').then(function(pdf){
 	    var i;
 
-	    for(i = 26;i < /*pdf.numPages*/30;i++){
+	    for(i = 0;i < /*pdf.numPages*/3;i++){
 		pdf.getPage(i + 1).then(function(idx){return function(page){
 		    var j_canvas = $('<canvas style="width:100%; margin-bottom:16px; display:block;"></canvas>');;
 		    var j_div = $('<div></div>');
