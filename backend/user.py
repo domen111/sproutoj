@@ -1,7 +1,6 @@
 import base64
 import bcrypt
 import psycopg2
-from tornado.gen import coroutine
 
 import config
 

@@ -3,126 +3,13 @@
 <link rel="stylesheet" type="text/css" href="/oj/manage-pro.css">
 
 <script type="text/javascript" id="contjs">
-    function pack_send(pack_token,file){
-	var defer = $.Deferred();
-	var off = 0;
-	var remain = file.size;
-	var reader = new FileReader();
-
-	reader.onload = function(e){
-	    var ws = new WebSocket('ws://192.168.137.34/oj/be/pack');
-	    var data = e.target.result;
-
-	    ws.onopen = function(e){
-		ws.send(JSON.stringify({
-		    'pack_token':pack_token,
-		    'pack_size':file.size
-		}));
-	    };
-	    ws.onmessage = function(e){
-		var size;
-
-		if(e.data[0] == 'E'){
-		    ws.close();
-		    defer.reject();
-		}else if(remain > 0){
-		    size = Math.min(remain,4194304);
-		    ws.send(data.slice(off,off + size));
-
-		    off += size;
-		    remain -= size;
-
-		    defer.notify(off / file.size);
-		}else{
-		    defer.notify(1);
-		    defer.resolve();
-		}
-	    };    
-	};
-	reader.readAsArrayBuffer(file);
-	
-	return defer.promise();
-    }
-
     function init(){
-	var j_add_pro = $('#add-pro');
 	var j_prolist = $('#prolist');
-
-	j_add_pro.find('button.switch').on('click',function(e){
-	    j_add_pro.find('button.switch').hide();	
-	    j_add_pro.find('div.form input').val('');
-	    j_add_pro.find('div.form').show();	
-	    j_prolist.hide();
-	});
-	j_add_pro.find('div.form > button.submit').on('click',function(e){
-	    var name = j_add_pro.find('input.name').val();
-	    var status = j_add_pro.find('select.status').val();
-	    var files = j_add_pro.find('input.file')[0].files;
-
-	    if(files.length == 0){
-		j_add_pro.find('div.print').print('No file selected');
-		return;
-	    }
-
-	    $.post('/oj/be/manage/pro',{
-		'reqtype':'addpro',
-		'name':name,
-		'status':status
-	    },function(res){
-		var reto;
-		var msg = 'Unknown';
-		var j_bar = j_add_pro.find('div.upload > div.prog > div.bar');
-
-		if(res[0] == 'E'){
-		    j_add_pro.find('div.print').print(msg);
-		}else{
-		    reto = JSON.parse(res);
-		    
-		    j_add_pro.find('div.form').hide();	
-		    j_add_pro.find('div.upload').show();	
-
-		    pack_send(reto.pack_token,files[0]).done(function(){
-			j_add_pro.find('button.switch').show();	
-			j_add_pro.find('div.upload').hide();	
-			j_prolist.show();
-		    }).fail(function(){
-			j_add_pro.find('div.print').print('Failed');
-		    }).progress(function(prog){
-			j_bar.css('width',(prog * 100) + '%');
-		    });
-		}
-	    });
-	});
-	j_add_pro.find('div.form > button.cancel').on('click',function(e){
-	    j_add_pro.find('button.switch').show();	
-	    j_add_pro.find('div.form').hide();	
-	    j_prolist.show();
-	});
     }
 </script>
 {% end %}
 {% block content %}
-    <div id="add-pro">
-	<button class="btn btn-pri switch">Add Problem</button>
-	<div class="blk-cont hide form">
-	    <input type="text" class="name" placeholder="Problem Name">
-	    <select class="status">
-		<option value=0>Online</option>
-		<option value=1>Hidden</option>
-		<option value=2>Offline</option>
-	    </select>
-	    <input type="file" class="file">
-	    <button class="btn-con submit">Upload</button>
-	    <button class="btn-def cancel">Cancel</button>
-	    <div class="print"></div>
-	</div>
-	<div class="hide upload">
-	    <strong>Uploading ...</strong><br><br>
-	    <div class="blk-prog prog">
-		<div class="bar"></div>
-	    </div>
-	</div>
-    </div>
+    <a class="btn btn-pri" href="/oj/manage/addpro/">Add Problem</a>
     <table id="prolist">
 	<thead>
 	    <tr>

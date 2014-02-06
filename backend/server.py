@@ -14,6 +14,7 @@ import config
 from req import RequestHandler
 from req import reqenv
 from user import UserService
+from pro import ProService
 from proset import ProsetHandler
 from manage import ManageHandler
 from pack import PackHandler
@@ -100,6 +101,7 @@ if __name__ == '__main__':
     db = pg.AsyncPG(config.DBNAME_OJ,config.DBUSER_OJ,config.DBPW_OJ)
     mc = mcd.AsyncMCD()
     UserService(db,mc)
+    ProService(db,mc)
     PackService(db,mc)
 
     tpldr = tornado.template.Loader('templ')
@@ -121,5 +123,5 @@ if __name__ == '__main__':
 
     httpsrv = tornado.httpserver.HTTPServer(app)
     httpsrv.add_sockets(httpsock)
-
+    
     tornado.ioloop.IOLoop.instance().start()
