@@ -1,0 +1,35 @@
+@import "blk-inc.less";
+
+html,body{
+    height:100%;
+}
+#index-cont{
+    margin-top:16px;
+}
+#footer{
+    width:100%;
+    height:32px;
+    margin-top:64px;
+    position:absolute;
+    bottom:0px;
+    left:0px;
+
+    small{
+        float:right;
+    }
+}
+
+.print{
+    margin:0px 8px 0px 8px;
+    font-size:@fs-sm;
+    display:inline-block;
+    opacity:0;
+    transition:opacity 200ms;
+
+    &.print-succ{
+	color:@green;
+    }
+    &.print-fail{
+	color:@red;
+    }
+}

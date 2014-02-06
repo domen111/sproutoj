@@ -1,0 +1,25 @@
+<link rel="stylesheet" type="text/css" href="/oj/probset.css">
+
+<script type="text/javascript">
+    function init(){
+    }
+</script>
+
+<div id="problist" class="g-lg-8 g-off-lg-2">
+    <div class="g-r head">
+        <div class="g-lg-1">#</div>
+        <div class="g-lg-2">State</div>
+        <div class="g-lg-6">Problem Name</div>
+        <div class="g-lg-3">Score</div>
+    </div>
+{% for i in range(40) %}
+    <div class="g-r item">
+        <div class="g-lg-1 id">{{ i + 1 }}</div>
+        <div class="g-lg-2 state accept">solved</div>
+        <div class="g-lg-6 name">Test</div>
+        <div class="g-lg-3 score">
+            <span class="get">290</span> / <span class="total">300</span>
+        </div>
+    </div>
+{% end %}
+</div>

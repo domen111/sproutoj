@@ -1,0 +1,27 @@
+@import "blk-inc.less";
+
+#problist{
+    & > div.head{
+        margin-bottom:16px;
+        height:32px;
+        color:@gray;
+        font-weight:bold;
+        border-bottom:@gray 1px solid;
+    }
+    & > div.item{
+        height:32px;
+
+        & > div.state{
+            color:@gray;
+
+            &.accept{
+                color:@green;
+            }
+        }
+        & > div.score{
+            span.total{
+                color:@gray;
+            }
+        }
+    }
+}

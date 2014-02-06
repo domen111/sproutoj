@@ -1,0 +1,16 @@
+*.swp
+
+*.o
+*.so
+
+*.py[cod]
+__pycache__/
+
+*.css
+
+tmp/
+problem/
+testdata/
+pg.py
+mcd.py
+config.py
