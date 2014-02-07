@@ -12,6 +12,21 @@
 	    };
 	    reader.readAsText(this.files[0]);
 	});
+        j_submit.find('button.submit').on('click',function(e){
+            var code = j_submit.find('textarea.code').val();
+
+            $.post('/oj/be/submit',{
+                'reqtype':'submit',
+                'pro_id':{{ pro['pro_id'] }},
+                'code':code
+            },function(res){
+                if(res[0] == 'E'){
+		    j_submit.find('div.print').print('Submit failed');
+                }else{
+                    index.go('/oj/chal/' + JSON.parse(res) + '/');
+                } 
+            });
+        });
     }
 </script>
 
@@ -20,4 +35,5 @@
     <textarea class="code" placeholder="Code"></textarea>
     <input type="file" class="file">
     <button class="btn-con submit">Submit</button>
+    <div class="print"></div>
 </div>

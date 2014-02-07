@@ -17,35 +17,25 @@
 		return;
 	    }
 
-	    $.post('/oj/be/manage/pack',{
-		'reqtype':'gettoken'
-	    },function(res){
-		var reto;
-		var msg = 'Unknown';
+            pack.get_token().done(function(pack_token){
 		var j_bar = j_upload.find('div.prog > div.bar');
 
-		if(res[0] == 'E'){
-		    j_form.find('div.print').print(msg);
-		}else{
-		    pack_token = JSON.parse(res);
-		    
-		    j_form.hide();
-		    j_upload.show();
+                j_form.hide();
+                j_upload.show();
 
-		    pack_send(pack_token,files[0]).done(function(){
-			$.post('/oj/be/manage/pro',{
-			    'reqtype':'addpro',
-			    'name':name,
-			    'status':status,
-			    'pack_token':pack_token
-			},function(res){
-			    index.go('/oj/manage/pro/');
-			});
-		    }).progress(function(prog){
-			j_bar.css('width',(prog * 100) + '%');
-		    });
-		}
-	    });
+                pack.send(pack_token,files[0]).done(function(){
+                    $.post('/oj/be/manage/pro',{
+                        'reqtype':'addpro',
+                        'name':name,
+                        'status':status,
+                        'pack_token':pack_token
+                    },function(res){
+                        index.go('/oj/manage/pro/');
+                    });
+                }).progress(function(prog){
+                    j_bar.css('width',(prog * 100) + '%');
+                });
+            });
 	});
 	j_form.find('button.cancel').on('click',function(e){
 	    index.go('/oj/manage/pro/');

@@ -1,9 +1,12 @@
 import os
+import json
 import tornado.process
 import tornado.concurrent
 
 from req import RequestHandler
 from req import reqenv
+from user import UserService
+from chal import ChalService
 from pack import PackService
 
 class ProService:
@@ -19,11 +22,13 @@ class ProService:
 
         ProService.inst = self
 
-    def get_pro(self,pro_id):
+    def get_pro(self,pro_id,acct):
+        max_status = self._get_acct_limit(acct)
+
         cur = yield self.db.cursor()
         yield cur.execute(('SELECT "pro_id","name","status" FROM "problem" '
-            'WHERE "pro_id" = %s;'),
-            (pro_id,))
+            'WHERE "pro_id" = %s AND "status" <= %s;'),
+            (pro_id,max_status))
 
         if cur.rowcount != 1:
             return ('Enoext',None)
@@ -104,6 +109,13 @@ class ProService:
         
         return (None,None)
 
+    def _get_acct_limit(self,acct):
+        if acct['type'] == UserService.ACCTTYPE_KERNEL:
+            return ProService.STATUS_OFFLINE
+
+        else:
+            return ProService.STATUS_ONLINE
+
     def _unpack_pro(self,pro_id,pack_token):
         err,ret = yield PackService.inst.unpack(
                 pack_token,'problem/%d'%pro_id,True)
@@ -136,7 +148,7 @@ class ProHandler(RequestHandler):
     def get(self,pro_id):
         pro_id = int(pro_id)
 
-        err,pro = yield from ProService.inst.get_pro(pro_id)
+        err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
         if err:
             self.finish(err)
             return
@@ -149,7 +161,7 @@ class SubmitHandler(RequestHandler):
     def get(self,pro_id):
         pro_id = int(pro_id)
 
-        err,pro = yield from ProService.inst.get_pro(pro_id)
+        err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
         if err:
             self.finish(err)
             return
@@ -159,5 +171,16 @@ class SubmitHandler(RequestHandler):
 
     @reqenv
     def post(self):
-        pass
+        pro_id = int(self.get_argument('pro_id'))
+        code = self.get_argument('code')
 
+        err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
+        if err:
+            self.finish(err)
+            return
+
+        err,chal_id = yield from ChalService.inst.add_chal(
+                pro_id,self.acct['acct_id'],code)
+
+        self.finish(json.dumps(chal_id))
+        return

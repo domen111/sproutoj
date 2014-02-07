@@ -31,7 +31,9 @@ def reqenv(func):
     def wrap(self,*args,**kwargs):
         err,acct_id = yield from UserService.inst.getsign(self)
         if err == None:
+            err,acct = yield from UserService.inst.getinfo(acct_id)
             self.acct_id = acct_id
+            self.acct = acct
 
         else:
             self.acct_id = None

@@ -23,7 +23,7 @@
 	{% for pro in prolist %}
 	    <tr>
 		<td>{{ pro['pro_id'] }}</td>
-		<td>{{ pro['name'] }}</td>
+		<td><a href="/oj/pro/{{ pro['pro_id'] }}/">{{ pro['name'] }}</a></td>
 	    {% if pro['status'] == 0 %}
 		<td class="status-online">Online</td>
 	    {% elif pro['status'] == 1 %}

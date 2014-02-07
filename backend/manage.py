@@ -2,12 +2,17 @@ import json
 
 from req import RequestHandler
 from req import reqenv
+from user import UserService
 from pack import PackService
 from pro import ProService
 
 class ManageHandler(RequestHandler):
     @reqenv
     def get(self,page = 'dash'):
+        if self.acct['type'] != UserService.ACCTTYPE_KERNEL:
+            self.finish('Eacces')
+            return
+
         if page == 'dash':
             self.render('manage-dash',page = page)
             return
@@ -36,8 +41,7 @@ class ManageHandler(RequestHandler):
 
     @reqenv
     def post(self,page):
-        acct = yield from UserService.inst.getinfo(self.acct_id) 
-        if acct['type'] != UserService.ACCTTYPE_KERNEL:
+        if self.acct['type'] != UserService.ACCTTYPE_KERNEL:
             self.finish('Eacces')
             return
 

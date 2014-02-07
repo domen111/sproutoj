@@ -18,6 +18,7 @@ from pro import ProService
 from pro import ProsetHandler
 from pro import ProHandler
 from pro import SubmitHandler
+from chal import ChalService
 from manage import ManageHandler
 from pack import PackHandler
 from pack import PackService
@@ -104,6 +105,7 @@ if __name__ == '__main__':
     mc = mcd.AsyncMCD()
     UserService(db,mc)
     ProService(db,mc)
+    ChalService(db,mc)
     PackService(db,mc)
 
     tpldr = tornado.template.Loader('templ')
@@ -119,6 +121,7 @@ if __name__ == '__main__':
         ('/proset',ProsetHandler,args),
         ('/proset/(.*)',ProsetHandler,args),
         ('/pro/(.*)',ProHandler,args),
+        ('/submit',SubmitHandler,args),
         ('/submit/(.*)',SubmitHandler,args),
         ('/manage',ManageHandler,args),
         ('/manage/(.*)',ManageHandler,args),
