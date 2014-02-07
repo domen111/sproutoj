@@ -23,8 +23,24 @@ class ManageHandler(RequestHandler):
             self.render('manage-pro-add',page = page)
             return
 
+        elif page == 'updatepro':
+            pro_id = int(self.get_argument('proid'))
+
+            err,pro = yield from ProService.inst.get_pro(pro_id)
+            if err:
+                self.finish(err)
+                return
+
+            self.render('manage-pro-update',page = page,pro = pro)
+            return
+
     @reqenv
     def post(self,page):
+        acct = yield from UserService.inst.getinfo(self.acct_id) 
+        if acct['type'] != UserService.ACCTTYPE_KERNEL:
+            self.finish('Eacces')
+            return
+
         if page == 'pack':
             reqtype = self.get_argument('reqtype')
 
@@ -50,14 +66,12 @@ class ManageHandler(RequestHandler):
                 return
 
             elif reqtype == 'updatepro':
-                pro_id = self.get_argument('pro_id')
+                pro_id = int(self.get_argument('pro_id'))
                 name = self.get_argument('name')
                 status = int(self.get_argument('status'))
+                pack_token = self.get_argument('pack_token')
 
-                try:
-                    pack_token = self.get_argument('pack_token')
-
-                except tornado.web.HTTPError:
+                if pack_token == '':
                     pack_token = None
 
                 err,ret = yield from ProService.inst.update_pro(
@@ -68,5 +82,5 @@ class ManageHandler(RequestHandler):
                 self.finish('S')
                 return
 
-            self.finish('Eunk')
-            return
+        self.finish('Eunk')
+        return

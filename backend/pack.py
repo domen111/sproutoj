@@ -76,6 +76,7 @@ class PackService():
 
             callback((None,None))
 
+        pack_token = str(uuid.UUID(pack_token))
         if clean == False:
             _tar()
 

@@ -111,8 +111,13 @@ class ProService:
             return (err,None)
 
         os.chmod('problem/%d'%pro_id,0o755)
-        os.symlink(os.path.abspath('problem/%d/http'%pro_id),
-                '../http/problem/%d'%pro_id)
+        try:
+            os.symlink(os.path.abspath('problem/%d/http'%pro_id),
+                    '../http/problem/%d'%pro_id)
+
+        except FileExistsError:
+            pass
+
         return (None,None)
 
 class ProsetHandler(RequestHandler):
