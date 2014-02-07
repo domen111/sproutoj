@@ -184,3 +184,16 @@ class SubmitHandler(RequestHandler):
 
         self.finish(json.dumps(chal_id))
         return
+
+class ChalHandler(RequestHandler):
+    @reqenv
+    def get(self,chal_id):
+        chal_id = int(chal_id)
+        self.render('chal')
+        return
+
+    @reqenv
+    def post(self):
+        reqtype = self.get_argument('reqtype')
+        self.finish('Eunk')
+        return

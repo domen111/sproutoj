@@ -26,10 +26,3 @@ class ChalService:
 
         return (None,chal_id)
 
-class ChalHandler(RequestHandler):
-    @reqenv
-    def get(self,chal_id):
-        chal_id = int(chal_id)
-
-        self.render('chal')
-        return
