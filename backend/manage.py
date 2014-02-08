@@ -31,7 +31,7 @@ class ManageHandler(RequestHandler):
         elif page == 'updatepro':
             pro_id = int(self.get_argument('proid'))
 
-            err,pro = yield from ProService.inst.get_pro(pro_id)
+            err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
             if err:
                 self.finish(err)
                 return

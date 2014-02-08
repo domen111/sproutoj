@@ -59,28 +59,41 @@ class PackService():
 
         return (None,pack_token)
 
-    @tornado.concurrent.return_future
-    def unpack(self,pack_token,dst,clean = False,callback = None):
-        def _rm_cb(code):
-            os.makedirs(dst,0o700)
-            _tar()
+    def unpack(self,pack_token,dst,clean = False):
+        @tornado.concurrent.return_future
+        def _unpack(callback):
+            def __rm_cb(code):
+                os.makedirs(dst,0o700)
+                __tar()
 
-        def _tar():
-            sub = tornado.process.Subprocess(
-                    ['/bin/tar','-Jxf','tmp/%s.tar.xz'%pack_token,'-C',dst])
-            sub.set_exit_callback(_tar_cb)
+            def __tar():
+                sub = tornado.process.Subprocess(
+                        ['/bin/tar','-Jxf','tmp/%s.tar.xz'%pack_token,'-C',dst])
+                sub.set_exit_callback(__tar_cb)
 
-        def _tar_cb(code):
-            if code != 0:
-                callback(('Eunk',None))
+            def __tar_cb(code):
+                if code != 0:
+                    callback(('Eunk',None))
 
-            callback((None,None))
+                os.remove('tmp/%s.tar.xz'%pack_token)
+
+                callback((None,None))
+
+            if clean == False:
+                __tar()
+
+            else:
+                sub = tornado.process.Subprocess(
+                        ['/bin/rm','-Rf',dst])
+                sub.set_exit_callback(__rm_cb)
 
         pack_token = str(uuid.UUID(pack_token))
-        if clean == False:
-            _tar()
 
-        else:
-            sub = tornado.process.Subprocess(
-                    ['/bin/rm','-Rf',dst])
-            sub.set_exit_callback(_rm_cb)
+        ret = yield self.mc.get('PACK_TOKEN@%s'%pack_token)
+        if ret == None:
+            callback(('Enoext',None))
+
+        yield self.mc.delete('PACK_TOKEN@%s'%pack_token)
+
+        ret = yield _unpack()
+        return ret

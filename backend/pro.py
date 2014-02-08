@@ -35,9 +35,13 @@ class ProService:
 
         pro_id,name,status = cur.fetchone()
 
-        pro_f = open('problem/%d/conf.json'%pro_id)
-        conf = json.load(pro_f)
-        pro_f.close()
+        if status < ProService.STATUS_OFFLINE:
+            pro_f = open('problem/%d/conf.json'%pro_id)
+            conf = json.load(pro_f)
+            pro_f.close()
+
+        else:
+            conf = None
 
         return (None,{
             'pro_id':pro_id,
@@ -123,7 +127,7 @@ class ProService:
             return ProService.STATUS_ONLINE
 
     def _unpack_pro(self,pro_id,pack_token):
-        err,ret = yield PackService.inst.unpack(
+        err,ret = yield from PackService.inst.unpack(
                 pack_token,'problem/%d'%pro_id,True)
         if err:
             return (err,None)
