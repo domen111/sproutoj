@@ -1,3 +1,5 @@
+{% from chal import ChalService %}
+
 <link rel="stylesheet" type="text/css" href="/oj/chal.css">
 
 <script type="text/javascript">
@@ -41,12 +43,12 @@
                 </tr>
             </thead>
             <tbody>
-            {% for i in range(len(pro['conf']['test'])) %}
+            {% for test in chal['tests'] %}
                 <tr>
-                    <td>{{ '%04d'%(i + 1) }}</td>
-                    <td>judging</td>
-                    <td>{{ 0 }}</td>
-                    <td>{{ 0 }}</td>
+                    <td>{{ '%04d'%test['test_idx'] }}</td>
+                    <td>{{ ChalService.STATE_STR[test['state']] }}</td>
+                    <td>{{ test['runtime'] }}</td>
+                    <td>{{ test['memory'] }}</td>
                 </tr>
             {% end %}
             </tbody>

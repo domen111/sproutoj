@@ -195,6 +195,19 @@ class SubmitHandler(RequestHandler):
 
         err,chal_id = yield from ChalService.inst.add_chal(
                 pro_id,self.acct['acct_id'],code)
+        if err:
+            self.finish(err)
+            return
+
+        tests = pro['conf']['test']
+        for test in tests:
+            test['state'] = ChalService.STATE_JUDGE
+
+        err,ret = yield from ChalService.inst.emit_chal(
+                chal_id,pro['conf']['test'])
+        if err:
+            self.finish(err)
+            return
 
         self.finish(json.dumps(chal_id))
         return
