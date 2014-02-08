@@ -4,6 +4,18 @@
 
 <script type="text/javascript">
     function init(){
+        $('#rechal').on('click',function(e){
+            $.post('/oj/be/submit',{
+                'reqtype':'rechal',
+                'chal_id':{{ chal['chal_id'] }},
+            },function(res){
+                if(res[0] != 'E'){
+                
+                }else{
+                    index.reloac();
+                }     
+            });        
+        });
     }
 </script>
 
@@ -31,6 +43,7 @@
                 </tr>
             </tbody>
         </table>
+        <button id="rechal" class="btn-wrn">ReChallenge</button>
     </div>
     <div class="g-lg-8 blk-cont">
         <table id="test">

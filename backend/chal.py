@@ -1,5 +1,6 @@
 import os
 import json
+from tornado.websocket import websocket_connect
 
 class ChalService:
     STATE_AC = 1
@@ -15,15 +16,16 @@ class ChalService:
     def __init__(self,db,mc):
         self.db = db
         self.mc = mc
+        self.ws = None
 
         ChalService.inst = self
 
     def add_chal(self,pro_id,acct_id,code):
         cur = yield self.db.cursor()
         yield cur.execute(('INSERT INTO "challenge" '
-            '("pro_id","acct_id") '
-            'VALUES (%s,%s) RETURNING "chal_id";'),
-            (pro_id,acct_id))
+            '("pro_id","acct_id","state") '
+            'VALUES (%s,%s,%s) RETURNING "chal_id";'),
+            (pro_id,acct_id,ChalService.STATE_JUDGE))
 
         if cur.rowcount != 1:
             return ('Eunk',None)
@@ -36,6 +38,20 @@ class ChalService:
         code_f.close()
 
         return (None,chal_id)
+
+    def reset_chal(self,chal_id):
+        cur = yield self.db.cursor()
+        yield cur.execute(('UPDATE "challenge" '
+            'SET "state" = %s,meta = \'\' WHERE "chal_id" = %s;'),
+            (ChalService.STATE_JUDGE,chal_id))
+
+        if cur.rowcount != 1:
+            return ('Enoext',None)
+
+        yield cur.execute('DELETE FROM "test" WHERE "chal_id" = %s;',
+                (chal_id,))
+
+        return (None,None)
 
     def get_chal(self,chal_id):
         cur = yield self.db.cursor()
@@ -78,12 +94,27 @@ class ChalService:
             'code':code
         })
 
-    def emit_chal(self,chal_id,tests):
+    def emit_chal(self,chal_id,timelimit,memlimit,tests,code_path,res_path):
         cur = yield self.db.cursor()
 
         for i in range(len(tests)):
+            tests[i]['test_idx'] = i
+            tests[i]['state'] = ChalService.STATE_JUDGE
+
             yield cur.execute(('INSERT INTO "test" '
                 '("chal_id","test_idx","state") VALUES (%s,%s,%s);'),
-                (chal_id,i,tests[i]['state']))
+                (chal_id,i,ChalService.STATE_JUDGE))
+
+        if self.ws == None:
+            self.ws = yield websocket_connect('ws://localhost:2501/judge')
+
+        self.ws.write_message(json.dumps({
+            'chal_id':chal_id,
+            'timelimit':timelimit,
+            'memlimit':memlimit,
+            'tests':tests,
+            'code_path':code_path,
+            'res_path':res_path
+        }))
 
         return (None,None)

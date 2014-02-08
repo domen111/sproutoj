@@ -144,7 +144,7 @@ class ProService:
 
 class ProsetHandler(RequestHandler):
     @reqenv
-    def get(self,page = None):
+    def get(self):
         err,prolist = yield from ProService.inst.list_pro()
         self.render('proset',prolist = prolist)
         return
@@ -189,26 +189,45 @@ class SubmitHandler(RequestHandler):
             self.finish('Esign')
             return
 
-        pro_id = int(self.get_argument('pro_id'))
-        code = self.get_argument('code')
+        reqtype = self.get_argument('reqtype')
+        if reqtype == 'submit':
+            pro_id = int(self.get_argument('pro_id'))
+            code = self.get_argument('code')
 
-        err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
-        if err:
-            self.finish(err)
+            err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
+            if err:
+                self.finish(err)
+                return
+
+            err,chal_id = yield from ChalService.inst.add_chal(
+                    pro_id,self.acct['acct_id'],code)
+            if err:
+                self.finish(err)
+                return
+
+        elif reqtype == 'rechal':
+            chal_id = int(self.get_argument('chal_id'))
+
+            err,ret = yield from ChalService.inst.reset_chal(chal_id)
+            err,chal = yield from ChalService.inst.get_chal(chal_id)
+            pro_id = chal['pro_id']
+
+            err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
+            if err:
+                self.finish(err)
+                return
+
+        else:
+            self.finish('Eparam')
             return
-
-        err,chal_id = yield from ChalService.inst.add_chal(
-                pro_id,self.acct['acct_id'],code)
-        if err:
-            self.finish(err)
-            return
-
-        tests = pro['conf']['test']
-        for test in tests:
-            test['state'] = ChalService.STATE_JUDGE
 
         err,ret = yield from ChalService.inst.emit_chal(
-                chal_id,pro['conf']['test'])
+                chal_id,
+                pro['conf']['timelimit'],
+                pro['conf']['memlimit'],
+                pro['conf']['test'],
+                os.path.abspath('code/%d/main.cpp'%chal_id),
+                os.path.abspath('problem/%d/testdata'%pro_id))
         if err:
             self.finish(err)
             return

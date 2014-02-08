@@ -7,7 +7,6 @@ import tornado.netutil
 import tornado.process
 import tornado.httpserver
 import tornado.web
-import tornado.template
 from tornado.gen import coroutine
 
 import config
@@ -109,25 +108,22 @@ if __name__ == '__main__':
     ChalService(db,mc)
     PackService(db,mc)
 
-    tpldr = tornado.template.Loader('templ')
     args = {
         'db':db,
         'mc':mc,
-        'tpldr':tpldr
     }
     app = tornado.web.Application([
         ('/index',IndexHandler,args),
         ('/sign',SignHandler,args),
         ('/acct',AcctHandler,args),
         ('/proset',ProsetHandler,args),
-        ('/proset/(.*)',ProsetHandler,args),
         ('/pro/(.*)',ProHandler,args),
         ('/submit',SubmitHandler,args),
         ('/submit/(.*)',SubmitHandler,args),
         ('/chal/(.*)',ChalHandler,args),
         ('/manage',ManageHandler,args),
         ('/manage/(.*)',ManageHandler,args),
-        ('/pack',PackHandler,args)
+        ('/pack',PackHandler,args),
     ],cookie_secret = config.COOKIE_SEC,autoescape = 'xhtml_escape')
 
     httpsrv = tornado.httpserver.HTTPServer(app)
