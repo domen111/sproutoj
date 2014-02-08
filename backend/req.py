@@ -37,6 +37,12 @@ def reqenv(func):
 
         else:
             self.acct_id = None
+            self.acct = {
+                'acct_id':0,
+                'mail':'',
+                'name':'',
+                'type':UserService.ACCTTYPE_USER
+            }
 
         ret = func(self,*args,**kwargs)
         if isinstance(ret,types.GeneratorType):

@@ -26,3 +26,27 @@ class ChalService:
 
         return (None,chal_id)
 
+    def get_chal(self,chal_id):
+        cur = yield self.db.cursor()
+        yield cur.execute(('SELECT '
+            '"pro_id","acct_id","state","meta","timestamp" '
+            'FROM "challenge" WHERE "chal_id" = %s;'),
+            (chal_id,))
+
+        if cur.rowcount != 1:
+            return ('Eunk',None)
+        
+        code_f = open('code/%d/main.cpp'%chal_id,'rb')
+        code = code_f.read().decode('utf-8')
+        code_f.close()
+
+        pro_id,acct_id,state,meta,timestamp = cur.fetchone()
+        return (None,{
+            'chal_id':chal_id,
+            'pro_id':pro_id,
+            'acct_id':acct_id,
+            'state':state,
+            'meta':meta,
+            'timestamp':timestamp,
+            'code':code
+        })

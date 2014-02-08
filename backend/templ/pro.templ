@@ -64,15 +64,32 @@
 	</thead>
 	<tbody>
 	    <tr>
-		<td>solved</td>
-		<td>10</td>
+		<td>time</td>
+                <td>{{ pro['conf']['timelimit'] }}</td>
 	    </tr>
 	    <tr>
-		<td>tried</td>
-		<td>10</td>
+		<td>mem</td>
+		<td>{{ pro['conf']['memlimit'] }}</td>
 	    </tr>
 	</tbody>
     </table>
+    <table>
+	<thead>
+	    <tr>
+		<th>Test</th>
+		<th>Solved</th>
+	    </tr>
+	</thead>
+	<tbody>
+        {% for i in range(len(pro['conf']['test'])) %}
+	    <tr>
+                <td>{{ '%04d'%(i + 1) }}</td>
+                <td>{{ 0 }}</td>
+	    </tr>
+        {% end %}
+	</tbody>
+    </table>
+
 </div>
 <div id="cont" class="g-lg-10">
 </div>

@@ -34,10 +34,16 @@ class ProService:
             return ('Enoext',None)
 
         pro_id,name,status = cur.fetchone()
+
+        pro_f = open('problem/%d/conf.json'%pro_id)
+        conf = json.load(pro_f)
+        pro_f.close()
+
         return (None,{
             'pro_id':pro_id,
             'name':name,
-            'status':status
+            'status':status,
+            'conf':conf
         })
 
     def list_pro(self,max_status = STATUS_ONLINE):
@@ -159,6 +165,10 @@ class ProHandler(RequestHandler):
 class SubmitHandler(RequestHandler):
     @reqenv
     def get(self,pro_id):
+        if self.acct['acct_id'] == UserService.ACCTID_GUEST:
+            self.finish('Esign')
+            return
+
         pro_id = int(pro_id)
 
         err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
@@ -171,6 +181,10 @@ class SubmitHandler(RequestHandler):
 
     @reqenv
     def post(self):
+        if self.acct['acct_id'] == UserService.ACCTID_GUEST:
+            self.finish('Esign')
+            return
+
         pro_id = int(self.get_argument('pro_id'))
         code = self.get_argument('code')
 
@@ -189,7 +203,22 @@ class ChalHandler(RequestHandler):
     @reqenv
     def get(self,chal_id):
         chal_id = int(chal_id)
-        self.render('chal')
+
+        err,chal = yield from ChalService.inst.get_chal(chal_id)
+        if err:
+            self.finish(err)
+            return
+
+        err,pro = yield from ProService.inst.get_pro(chal['pro_id'],self.acct)
+        if err:
+            self.finish(err)
+            return
+
+        if (chal['acct_id'] != self.acct['acct_id'] and
+                self.acct['type'] != UserService.ACCTTYPE_KERNEL):
+            chal['code'] = None
+
+        self.render('chal',pro = pro,chal = chal)
         return
 
     @reqenv

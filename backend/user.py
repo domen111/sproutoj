@@ -15,6 +15,8 @@ class UserService:
     ACCTTYPE_KERNEL = 0
     ACCTTYPE_USER = 3
 
+    ACCTID_GUEST = 0
+
     def __init__(self,db,mc):
         self.db = db
         self.mc = mc
