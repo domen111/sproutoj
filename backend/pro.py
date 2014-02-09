@@ -2,6 +2,7 @@ import os
 import json
 import tornado.process
 import tornado.concurrent
+import tornado.web
 
 from req import RequestHandler
 from req import reqenv
@@ -239,8 +240,17 @@ class SubmitHandler(RequestHandler):
 class ChalListHandler(RequestHandler):
     @reqenv
     def get(self):
-        err,challist = yield from ChalService.inst.list_chal(self.acct['type'])
-        self.render('challist',challist = challist)
+        try:
+            off = int(self.get_argument('off'))
+
+        except tornado.web.HTTPError:
+            off = 0
+
+        err,chalstat = yield from ChalService.inst.get_stat()
+        err,challist = yield from ChalService.inst.list_chal(
+                off,20,self.acct['type'])
+
+        self.render('challist',chalstat = chalstat,challist = challist)
         return
 
     @reqenv

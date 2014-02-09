@@ -64,7 +64,7 @@
             <tbody>
             {% for test in chal['tests'] %}
                 <tr>
-                    <td>{{ '%04d'%test['test_idx'] }}</td>
+                    <td>{{ '%04d'%(test['test_idx'] + 1) }}</td>
                     <td class="state-{{ test['state'] }}">{{ ChalService.STATE_STR[test['state']] }}</td>
                     <td>{{ test['runtime'] }}</td>
                     <td>{{ test['memory'] }}</td>

@@ -159,7 +159,7 @@ class ChalService:
 
         return (None,None)
 
-    def list_chal(self,max_accttype = UserService.ACCTTYPE_USER):
+    def list_chal(self,off,num,max_accttype = UserService.ACCTTYPE_USER):
         cur = yield self.db.cursor()
         yield cur.execute(('SELECT '
             '"challenge"."chal_id",'
@@ -176,8 +176,8 @@ class ChalService:
             'INNER JOIN "collect_test" '
             'ON "challenge"."chal_id" = "collect_test"."chal_id" '
             'WHERE "account"."type" <= %s '
-            'ORDER BY "challenge"."timestamp" DESC;'),
-            (max_accttype,))
+            'ORDER BY "challenge"."timestamp" DESC OFFSET %s LIMIT %s;'),
+            (max_accttype,off,num))
         
         challist = list()
         for (chal_id,pro_id,acct_id,timestamp,acct_name,
@@ -194,6 +194,19 @@ class ChalService:
             })
 
         return (None,challist)
+
+    def get_stat(self):
+        cur = yield self.db.cursor()
+        yield cur.execute('SELECT COUNT("chal_id") FROM "challenge";')
+
+        if cur.rowcount != 1:
+            return ('Eunk',None)
+
+        total_chal = cur.fetchone()[0]
+
+        return (None,{
+            'total_chal':total_chal    
+        })
 
     @coroutine
     def _collect_judge(self):
