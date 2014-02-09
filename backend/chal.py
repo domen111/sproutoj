@@ -197,7 +197,7 @@ class ChalService:
 
     def get_stat(self):
         cur = yield self.db.cursor()
-        yield cur.execute('SELECT COUNT("chal_id") FROM "challenge";')
+        yield cur.execute('SELECT COUNT(1) FROM "challenge";')
 
         if cur.rowcount != 1:
             return ('Eunk',None)
