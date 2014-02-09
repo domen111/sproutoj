@@ -3,14 +3,26 @@ import json
 from tornado.gen import coroutine
 from tornado.websocket import websocket_connect
 
+from user import UserService
+
 class ChalService:
     STATE_AC = 1
     STATE_WA = 2
+    STATE_RE = 3
+    STATE_TLE = 4
+    STATE_MLE = 5
+    STATE_CE = 6
+    STATE_ERR = 7
     STATE_JUDGE = 100
 
     STATE_STR = {
         STATE_AC:'Solved',        
         STATE_WA:'Wrong Answer',
+        STATE_RE:'Runtime Error',
+        STATE_TLE:'Time Limit Exceed',
+        STATE_MLE:'Memory Limit Exceed',
+        STATE_CE:'Compile Error',
+        STATE_ERR:'Internal Error',
         STATE_JUDGE:'Judging',
     }
 
@@ -19,14 +31,16 @@ class ChalService:
         self.mc = mc
         self.ws = None
 
+        self._collect_judge()
+
         ChalService.inst = self
 
     def add_chal(self,pro_id,acct_id,code):
         cur = yield self.db.cursor()
         yield cur.execute(('INSERT INTO "challenge" '
-            '("pro_id","acct_id","state") '
-            'VALUES (%s,%s,%s) RETURNING "chal_id";'),
-            (pro_id,acct_id,ChalService.STATE_JUDGE))
+            '("pro_id","acct_id") '
+            'VALUES (%s,%s) RETURNING "chal_id";'),
+            (pro_id,acct_id))
 
         if cur.rowcount != 1:
             return ('Eunk',None)
@@ -43,8 +57,8 @@ class ChalService:
     def reset_chal(self,chal_id):
         cur = yield self.db.cursor()
         yield cur.execute(('UPDATE "challenge" '
-            'SET "state" = %s,meta = \'\' WHERE "chal_id" = %s;'),
-            (ChalService.STATE_JUDGE,chal_id))
+            'SET meta = \'\' WHERE "chal_id" = %s;'),
+            (chal_id,))
 
         if cur.rowcount != 1:
             return ('Enoext',None)
@@ -52,19 +66,28 @@ class ChalService:
         yield cur.execute('DELETE FROM "test" WHERE "chal_id" = %s;',
                 (chal_id,))
 
+        yield cur.execute('REFRESH MATERIALIZED VIEW collect_test;')
+
         return (None,None)
 
     def get_chal(self,chal_id):
         cur = yield self.db.cursor()
         yield cur.execute(('SELECT '
-            '"pro_id","acct_id","state","meta","timestamp" '
-            'FROM "challenge" WHERE "chal_id" = %s;'),
+            '"challenge"."pro_id",'
+            '"challenge"."acct_id",'
+            '"challenge"."meta",'
+            '"challenge"."timestamp",'
+            '"account"."name" AS "acct_name" '
+            'FROM "challenge" '
+            'INNER JOIN "account" '
+            'ON "challenge"."acct_id" = "account"."acct_id" '
+            'WHERE "chal_id" = %s;'),
             (chal_id,))
 
         if cur.rowcount != 1:
-            return ('Eunk',None)
+            return ('Enoext',None)
 
-        pro_id,acct_id,state,meta,timestamp = cur.fetchone()
+        pro_id,acct_id,meta,timestamp,acct_name = cur.fetchone()
 
         yield cur.execute(('SELECT "test_idx","state","runtime","memory" '
             'FROM "test" '
@@ -77,7 +100,7 @@ class ChalService:
                 'test_idx':test_idx,
                 'state':state,
                 'runtime':runtime,
-                'memory':memory
+                'memory':memory,
             })
         
         code_f = open('code/%d/main.cpp'%chal_id,'rb')
@@ -88,7 +111,7 @@ class ChalService:
             'chal_id':chal_id,
             'pro_id':pro_id,
             'acct_id':acct_id,
-            'state':state,
+            'acct_name':acct_name,
             'meta':meta,
             'timestamp':timestamp,
             'tests':tests,
@@ -106,6 +129,8 @@ class ChalService:
                 '("chal_id","test_idx","state") VALUES (%s,%s,%s);'),
                 (chal_id,i,ChalService.STATE_JUDGE))
 
+        yield cur.execute('REFRESH MATERIALIZED VIEW collect_test;')
+
         if self.ws == None:
             self.ws = yield websocket_connect('ws://localhost:2501/judge')
 
@@ -119,3 +144,71 @@ class ChalService:
         }))
 
         return (None,None)
+
+    def update_test(self,chal_id,test_idx,state,runtime,memory):
+        cur = yield self.db.cursor()
+        yield cur.execute(('UPDATE "test" '
+            'SET "state" = %s,"runtime" = %s,"memory" = %s '
+            'WHERE "chal_id" = %s AND "test_idx" = %s;'),
+            (state,runtime,memory,chal_id,test_idx))
+
+        if cur.rowcount != 1:
+            return ('Enoext',None)
+
+        yield cur.execute('REFRESH MATERIALIZED VIEW collect_test;')
+
+        return (None,None)
+
+    def list_chal(self,max_accttype = UserService.ACCTTYPE_USER):
+        cur = yield self.db.cursor()
+        yield cur.execute(('SELECT '
+            '"challenge"."chal_id",'
+            '"challenge"."pro_id",'
+            '"challenge"."acct_id",'
+            '"challenge"."timestamp",'
+            '"account"."name" AS "acct_name",'
+            '"collect_test"."state",'
+            '"collect_test"."runtime",'
+            '"collect_test"."memory" '
+            'FROM "challenge" '
+            'INNER JOIN "account" '
+            'ON "challenge"."acct_id" = "account"."acct_id" '
+            'INNER JOIN "collect_test" '
+            'ON "challenge"."chal_id" = "collect_test"."chal_id" '
+            'WHERE "account"."type" <= %s '
+            'ORDER BY "challenge"."timestamp" DESC;'),
+            (max_accttype,))
+        
+        challist = list()
+        for (chal_id,pro_id,acct_id,timestamp,acct_name,
+                state,runtime,memory) in cur:
+            challist.append({
+                'chal_id':chal_id,
+                'pro_id':pro_id,
+                'acct_id':acct_id,
+                'timestamp':timestamp,
+                'acct_name':acct_name,
+                'state':state,
+                'runtime':runtime,
+                'memory':memory
+            })
+
+        return (None,challist)
+
+    @coroutine
+    def _collect_judge(self):
+        if self.ws == None:
+            self.ws = yield websocket_connect('ws://localhost:2501/judge')
+
+        while True:
+            ret = yield self.ws.read_message()
+            if ret == None:
+                break
+
+            res = json.loads(ret,'utf-8')
+            err,ret = yield from self.update_test(
+                    res['chal_id'],
+                    res['test_idx'],
+                    res['state'],
+                    res['runtime'],
+                    res['memory'])

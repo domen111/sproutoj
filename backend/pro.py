@@ -205,7 +205,8 @@ class SubmitHandler(RequestHandler):
                 self.finish(err)
                 return
 
-        elif reqtype == 'rechal':
+        elif (reqtype == 'rechal' and
+                self.acct['type'] == UserService.ACCTTYPE_KERNEL):
             chal_id = int(self.get_argument('chal_id'))
 
             err,ret = yield from ChalService.inst.reset_chal(chal_id)
@@ -235,6 +236,17 @@ class SubmitHandler(RequestHandler):
         self.finish(json.dumps(chal_id))
         return
 
+class ChalListHandler(RequestHandler):
+    @reqenv
+    def get(self):
+        err,challist = yield from ChalService.inst.list_chal(self.acct['type'])
+        self.render('challist',challist = challist)
+        return
+
+    @reqenv
+    def psot(self):
+        pass
+
 class ChalHandler(RequestHandler):
     @reqenv
     def get(self,chal_id):
@@ -254,7 +266,13 @@ class ChalHandler(RequestHandler):
                 self.acct['type'] != UserService.ACCTTYPE_KERNEL):
             chal['code'] = None
 
-        self.render('chal',pro = pro,chal = chal)
+        if self.acct['type'] == UserService.ACCTTYPE_KERNEL:
+            rechal = True
+
+        else:
+            rechal = False
+
+        self.render('chal',pro = pro,chal = chal,rechal = rechal)
         return
 
     @reqenv

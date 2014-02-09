@@ -41,9 +41,15 @@
                     <td>Timestamp</td>
                     <td class="time">{{ chal['timestamp'].strftime('%Y-%m-%d %H:%M:%S') }}</td>
                 </tr>
+                <tr>
+                    <td>Account</td>
+                    <td><a href="/oj/pro/{{ chal['acct_name'] }}/">{{ chal['acct_name'] }}</a></td>
+                </tr>
             </tbody>
         </table>
-        <button id="rechal" class="btn-wrn">ReChallenge</button>
+    {% if rechal == True %}
+        <button id="rechal" class="btn-wrn">Rechallenge</button>
+    {% end %}
     </div>
     <div class="g-lg-8 blk-cont">
         <table id="test">

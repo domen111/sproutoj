@@ -1,0 +1,37 @@
+{% from chal import ChalService %}
+
+<link rel="stylesheet" type="text/css" href="/oj/challist.css">
+
+<script type="text/javascript">
+    function init(){
+    }
+</script>
+
+<div class="g-lg-12">
+    <table id="challist">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Problem</th>
+                <th>Account</th>
+                <th>State</th>
+                <th>Runtime</th>
+                <th>Memory</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for chal in challist %}
+            <tr>
+                <td><a href="/oj/chal/{{ chal['chal_id'] }}/">{{ chal['chal_id'] }}</a></td>
+                <td><a href="/oj/pro/{{ chal['pro_id'] }}/">{{ chal['pro_id'] }}</a></td>
+                <td>{{ chal['acct_name'] }}</td>
+                <td>{{ ChalService.STATE_STR[chal['state']] }}</td>
+                <td>{{ chal['runtime'] }}</td>
+                <td>{{ round(chal['memory'] / 1024) }}</td>
+                <td class="time">{{ chal['timestamp'].strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            </tr>
+        {% end %}
+        </tbody>
+    </table>
+</div>

@@ -18,6 +18,7 @@ from pro import ProsetHandler
 from pro import ProHandler
 from pro import SubmitHandler
 from pro import ChalHandler
+from pro import ChalListHandler
 from chal import ChalService
 from manage import ManageHandler
 from pack import PackHandler
@@ -120,6 +121,7 @@ if __name__ == '__main__':
         ('/pro/(.*)',ProHandler,args),
         ('/submit',SubmitHandler,args),
         ('/submit/(.*)',SubmitHandler,args),
+        ('/chal',ChalListHandler,args),
         ('/chal/(.*)',ChalHandler,args),
         ('/manage',ManageHandler,args),
         ('/manage/(.*)',ManageHandler,args),
