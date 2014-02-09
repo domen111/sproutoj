@@ -55,6 +55,5 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def __init__(self,*args,**kwargs):
         self.db = kwargs.pop('db')
         self.mc = kwargs.pop('mc')
-        self.tpldr = kwargs.pop('tpldr')
 
         super().__init__(*args,**kwargs)

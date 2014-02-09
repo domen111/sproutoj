@@ -1,5 +1,6 @@
 import os
 import json
+from tornado.gen import coroutine
 from tornado.websocket import websocket_connect
 
 class ChalService:
