@@ -203,6 +203,7 @@ class ChalService:
 
     def update_test(self,chal_id,test_idx,state,runtime,memory):
         cur = yield self.db.cursor()
+
         yield cur.execute(('UPDATE "test" '
             'SET "state" = %s,"runtime" = %s,"memory" = %s '
             'WHERE "chal_id" = %s AND "test_idx" = %s;'),
