@@ -3,6 +3,7 @@ import json
 import tornado.process
 import tornado.concurrent
 import tornado.web
+from collections import OrderedDict
 
 from req import RequestHandler
 from req import reqenv
@@ -27,28 +28,37 @@ class ProService:
         max_status = self._get_acct_limit(acct)
 
         cur = yield self.db.cursor()
-        yield cur.execute(('SELECT "pro_id","name","status" FROM "problem" '
+        yield cur.execute(('SELECT "name","status" FROM "problem" '
             'WHERE "pro_id" = %s AND "status" <= %s;'),
             (pro_id,max_status))
 
         if cur.rowcount != 1:
             return ('Enoext',None)
 
-        pro_id,name,status = cur.fetchone()
+        name,status = cur.fetchone()
 
-        try:
-            pro_f = open('problem/%d/conf.json'%pro_id)
-            conf = json.load(pro_f)
-            pro_f.close()
+        yield cur.execute(('SELECT "test_idx","compile_type","score_type",'
+            '"check_type","timelimit","memlimit","metadata" '
+            'FROM "test_config" WHERE "pro_id" = %s ORDER BY "test_idx" ASC;'),
+            (pro_id,))
 
-        except Exception:
-            conf = None
+        testm_conf = OrderedDict()
+        for (test_idx,comp_type,score_type,check_type,timelimit,memlimit,
+                metadata) in cur:
+            testm_conf[test_idx] = {
+                'comp_type':comp_type,
+                'score_type':score_type,
+                'check_type':check_type,
+                'timelimit':timelimit,
+                'memlimit':memlimit,
+                'metadata':json.loads(metadata,'utf-8')
+            }
 
         return (None,{
             'pro_id':pro_id,
             'name':name,
             'status':status,
-            'conf':conf
+            'testm_conf':testm_conf
         })
 
     def list_pro(self,max_status = STATUS_ONLINE,acct_id = None):
@@ -216,10 +226,14 @@ class ProHandler(RequestHandler):
             self.finish(err)
             return
 
-        test_state = list()
-        for test_idx in range(len(pro['conf']['test'])):
-            test_state.append({
-                'solved':0    
+        testl = list()
+        for test_idx,test_conf in pro['testm_conf'].items():
+            testl.append({
+                'test_idx':test_idx,
+                'timelimit':test_conf['timelimit'],
+                'memlimit':test_conf['memlimit'],
+                'weight':test_conf['metadata']['weight'],
+                'solved':0
             })
 
             '''
@@ -238,7 +252,11 @@ class ProHandler(RequestHandler):
             test_state[test_idx]['solved'] = solved
             '''
 
-        self.render('pro',pro = pro,test_state = test_state)
+        self.render('pro',pro = {
+            'pro_id':pro['pro_id'],
+            'name':pro['name'],
+            'status':pro['status']
+        },testl = testl)
         return
 
 class SubmitHandler(RequestHandler):
@@ -298,9 +316,8 @@ class SubmitHandler(RequestHandler):
 
         err,ret = yield from ChalService.inst.emit_chal(
                 chal_id,
-                pro['conf']['timelimit'],
-                pro['conf']['memlimit'],
-                pro['conf']['test'],
+                pro_id,
+                pro['testm_conf'],
                 os.path.abspath('code/%d/main.cpp'%chal_id),
                 os.path.abspath('problem/%d/testdata'%pro_id))
         if err:
@@ -336,7 +353,7 @@ class ChalHandler(RequestHandler):
     def get(self,chal_id):
         chal_id = int(chal_id)
 
-        err,chal = yield from ChalService.inst.get_chal(chal_id)
+        err,chal = yield from ChalService.inst.get_chal(chal_id,self.acct)
         if err:
             self.finish(err)
             return
@@ -345,10 +362,6 @@ class ChalHandler(RequestHandler):
         if err:
             self.finish(err)
             return
-
-        if (chal['acct_id'] != self.acct['acct_id'] and
-                self.acct['type'] != UserService.ACCTTYPE_KERNEL):
-            chal['code'] = None
 
         if self.acct['type'] == UserService.ACCTTYPE_KERNEL:
             rechal = True

@@ -56,27 +56,18 @@ class ChalService:
 
     def reset_chal(self,chal_id):
         cur = yield self.db.cursor()
-        yield cur.execute(('UPDATE "challenge" '
-            'SET meta = \'\' WHERE "chal_id" = %s;'),
-            (chal_id,))
-
-        if cur.rowcount != 1:
-            return ('Enoext',None)
-
         yield cur.execute('DELETE FROM "test" WHERE "chal_id" = %s;',
                 (chal_id,))
 
-        yield cur.execute('REFRESH MATERIALIZED VIEW collect_test;')
-        yield cur.execute('REFRESH MATERIALIZED VIEW count_test;')
+        yield cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
 
         return (None,None)
 
-    def get_chal(self,chal_id):
+    def get_chal(self,chal_id,acct):
         cur = yield self.db.cursor()
         yield cur.execute(('SELECT '
             '"challenge"."pro_id",'
             '"challenge"."acct_id",'
-            '"challenge"."meta",'
             '"challenge"."timestamp",'
             '"account"."name" AS "acct_name" '
             'FROM "challenge" '
@@ -88,59 +79,69 @@ class ChalService:
         if cur.rowcount != 1:
             return ('Enoext',None)
 
-        pro_id,acct_id,meta,timestamp,acct_name = cur.fetchone()
+        pro_id,acct_id,timestamp,acct_name = cur.fetchone()
 
         yield cur.execute(('SELECT "test_idx","state","runtime","memory" '
             'FROM "test" '
             'WHERE "chal_id" = %s ORDER BY "test_idx" ASC;'),
             (chal_id,))
 
-        tests = list()
+        testl = list()
         for test_idx,state,runtime,memory in cur:
-            tests.append({
+            testl.append({
                 'test_idx':test_idx,
                 'state':state,
                 'runtime':runtime,
                 'memory':memory,
             })
         
-        code_f = open('code/%d/main.cpp'%chal_id,'rb')
-        code = code_f.read().decode('utf-8')
-        code_f.close()
+        if (acct['acct_id'] == acct_id or
+                acct['type'] == UserService.ACCTTYPE_KERNEL):
+            code_f = open('code/%d/main.cpp'%chal_id,'rb')
+            code = code_f.read().decode('utf-8')
+            code_f.close()
+
+        else:
+            code = None
 
         return (None,{
             'chal_id':chal_id,
             'pro_id':pro_id,
             'acct_id':acct_id,
             'acct_name':acct_name,
-            'meta':meta,
             'timestamp':timestamp,
-            'tests':tests,
+            'testl':testl,
             'code':code
         })
 
-    def emit_chal(self,chal_id,timelimit,memlimit,tests,code_path,res_path):
+    def emit_chal(self,chal_id,pro_id,testm_conf,code_path,res_path):
         cur = yield self.db.cursor()
 
-        for i in range(len(tests)):
-            tests[i]['test_idx'] = i
-            tests[i]['state'] = ChalService.STATE_JUDGE
+        testm = {}
+        for test_idx,test_conf in testm_conf.items():
+            testm[test_idx] = {
+                'state':ChalService.STATE_JUDGE,
+                'comp_type':test_conf['comp_type'],
+                'check_type':test_conf['check_type'],
+                'timelimit':test_conf['timelimit'],
+                'memlimit':test_conf['memlimit'],
+                'metadata':test_conf['metadata']
+            }
 
             yield cur.execute(('INSERT INTO "test" '
-                '("chal_id","test_idx","state") VALUES (%s,%s,%s);'),
-                (chal_id,i,ChalService.STATE_JUDGE))
+                '("chal_id","pro_id","test_idx","state") '
+                'VALUES (%s,%s,%s,%s);'),
+                (chal_id,pro_id,test_idx,ChalService.STATE_JUDGE))
 
-        yield cur.execute('REFRESH MATERIALIZED VIEW collect_test;')
-        yield cur.execute('REFRESH MATERIALIZED VIEW count_test;')
+        yield cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
+        #yield cur.execute('REFRESH MATERIALIZED VIEW count_test;')
 
         if self.ws == None:
             self.ws = yield websocket_connect('ws://localhost:2501/judge')
 
         self.ws.write_message(json.dumps({
             'chal_id':chal_id,
-            'timelimit':timelimit,
-            'memlimit':memlimit,
-            'tests':tests,
+            'testm':testm,
             'code_path':code_path,
             'res_path':res_path
         }))
@@ -157,8 +158,7 @@ class ChalService:
         if cur.rowcount != 1:
             return ('Enoext',None)
 
-        yield cur.execute('REFRESH MATERIALIZED VIEW collect_test;')
-        yield cur.execute('REFRESH MATERIALIZED VIEW count_test;')
+        yield cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
 
         return (None,None)
 
