@@ -19,7 +19,7 @@ var pack = new function(){
 	return defer.promise();
     };
     that.send = function(pack_token,file){
-	var ws = new WebSocket('ws://192.168.137.150/oj/be/pack');
+	var ws = new WebSocket('ws://140.112.31.201:11180/oj/be/pack');
 	var defer = $.Deferred();
 	var off = 0;
 	var remain = file.size;

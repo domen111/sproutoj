@@ -244,8 +244,8 @@ class ProHandler(RequestHandler):
             (pro_id,ChalService.STATE_AC,UserService.ACCTTYPE_MEMBER))
         
         countmap = {}
-        for test_idx,countmap in cur:
-            countm[test_idx] = count
+        for test_idx,count in cur:
+            countmap[test_idx] = count
 
         for test in testl:
             if test['test_idx'] in countmap:

@@ -36,9 +36,9 @@ def reqenv(func):
         else:
             self.acct = {
                 'acct_id':0,
+                'acct_type':UserService.ACCTTYPE_USER,
                 'mail':'',
-                'name':'',
-                'type':UserService.ACCTTYPE_USER
+                'name':''
             }
 
         ret = func(self,*args,**kwargs)
