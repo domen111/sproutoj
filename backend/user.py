@@ -13,6 +13,7 @@ class UserService:
     NAME_MIN = 1
 
     ACCTTYPE_KERNEL = 0
+    ACCTTYPE_MEMBER = 2
     ACCTTYPE_USER = 3
 
     ACCTID_GUEST = 0

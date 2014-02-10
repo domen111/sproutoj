@@ -51,18 +51,39 @@ class ProService:
             'conf':conf
         })
 
-    def list_pro(self,max_status = STATUS_ONLINE):
+    def list_pro(self,max_status = STATUS_ONLINE,acct_id = None):
         cur = yield self.db.cursor()
-        yield cur.execute(('SELECT "pro_id","name","status" FROM "problem" '
-            'WHERE "status" <= %s ORDER BY "pro_id" ASC;'),
-            (max_status,))
+
+        if acct_id == None:
+            yield cur.execute(('SELECT "pro_id","name","status",NULL '
+                'FROM "problem" '
+                'WHERE "status" <= %s ORDER BY "pro_id" ASC;'),
+                (max_status,))
+
+        else:
+            yield cur.execute(('SELECT '
+                '"problem"."pro_id",'
+                '"problem"."name",'
+                '"problem"."status",'
+                'MIN("collect_test"."state") '
+                'FROM "challenge" '
+                'INNER JOIN "collect_test" '
+                'ON "challenge"."chal_id" = "collect_test"."chal_id" '
+                'AND "challenge"."acct_id" = %s '
+                'RIGHT JOIN "problem" '
+                'ON "challenge"."pro_id" = "problem"."pro_id" '
+                'AND "problem"."status" <= %s '
+                'GROUP BY "problem"."pro_id" '
+                'ORDER BY "pro_id" ASC;'),
+                (acct_id,max_status))
 
         prolist = list()
-        for pro_id,name,status in cur:
+        for pro_id,name,status,state in cur:
             prolist.append({
                 'pro_id':pro_id,
                 'name':name,
-                'status':status
+                'status':status,
+                'state':state
             })
 
         return (None,prolist)
@@ -146,7 +167,8 @@ class ProService:
 class ProsetHandler(RequestHandler):
     @reqenv
     def get(self):
-        err,prolist = yield from ProService.inst.list_pro()
+        err,prolist = yield from ProService.inst.list_pro(
+                acct_id = self.acct['acct_id'])
         self.render('proset',prolist = prolist)
         return
 
@@ -164,7 +186,27 @@ class ProHandler(RequestHandler):
             self.finish(err)
             return
 
-        self.render('pro',pro = pro)
+        test_state = list()
+        for test_idx in range(len(pro['conf']['test'])):
+            test_state.append({
+                'solved':0    
+            })
+
+        cur = yield self.db.cursor()
+        yield cur.execute(('SELECT '
+            '"count_test"."test_idx",'
+            'SUM("count_test"."count") AS "solved" '
+            'FROM "count_test" '
+            'INNER JOIN "challenge" '
+            'ON "count_test"."chal_id" = "challenge"."chal_id" '
+            'WHERE "count_test"."state" = %s AND "count_test"."type" = %s '
+            'GROUP BY "count_test"."test_idx";'),
+            (ChalService.STATE_AC,UserService.ACCTTYPE_MEMBER))
+        
+        for test_idx,solved in cur:
+            test_state[test_idx]['solved'] = solved
+
+        self.render('pro',pro = pro,test_state = test_state)
         return
 
 class SubmitHandler(RequestHandler):
@@ -246,9 +288,10 @@ class ChalListHandler(RequestHandler):
         except tornado.web.HTTPError:
             off = 0
 
-        err,chalstat = yield from ChalService.inst.get_stat()
+        err,chalstat = yield from ChalService.inst.get_stat(
+                min(self.acct['type'],UserService.ACCTTYPE_MEMBER))
         err,challist = yield from ChalService.inst.list_chal(
-                off,20,self.acct['type'])
+                off,20,min(self.acct['type'],UserService.ACCTTYPE_MEMBER))
 
         self.render('challist',chalstat = chalstat,challist = challist)
         return

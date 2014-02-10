@@ -67,6 +67,7 @@ class ChalService:
                 (chal_id,))
 
         yield cur.execute('REFRESH MATERIALIZED VIEW collect_test;')
+        yield cur.execute('REFRESH MATERIALIZED VIEW count_test;')
 
         return (None,None)
 
@@ -130,6 +131,7 @@ class ChalService:
                 (chal_id,i,ChalService.STATE_JUDGE))
 
         yield cur.execute('REFRESH MATERIALIZED VIEW collect_test;')
+        yield cur.execute('REFRESH MATERIALIZED VIEW count_test;')
 
         if self.ws == None:
             self.ws = yield websocket_connect('ws://localhost:2501/judge')
@@ -156,10 +158,11 @@ class ChalService:
             return ('Enoext',None)
 
         yield cur.execute('REFRESH MATERIALIZED VIEW collect_test;')
+        yield cur.execute('REFRESH MATERIALIZED VIEW count_test;')
 
         return (None,None)
 
-    def list_chal(self,off,num,max_accttype = UserService.ACCTTYPE_USER):
+    def list_chal(self,off,num,min_accttype = UserService.ACCTTYPE_MEMBER):
         cur = yield self.db.cursor()
         yield cur.execute(('SELECT '
             '"challenge"."chal_id",'
@@ -175,9 +178,9 @@ class ChalService:
             'ON "challenge"."acct_id" = "account"."acct_id" '
             'INNER JOIN "collect_test" '
             'ON "challenge"."chal_id" = "collect_test"."chal_id" '
-            'WHERE "account"."type" <= %s '
+            'WHERE "account"."type" >= %s '
             'ORDER BY "challenge"."timestamp" DESC OFFSET %s LIMIT %s;'),
-            (max_accttype,off,num))
+            (min_accttype,off,num))
         
         challist = list()
         for (chal_id,pro_id,acct_id,timestamp,acct_name,
@@ -195,15 +198,18 @@ class ChalService:
 
         return (None,challist)
 
-    def get_stat(self):
+    def get_stat(self,min_accttype = UserService.ACCTTYPE_MEMBER):
         cur = yield self.db.cursor()
-        yield cur.execute('SELECT COUNT(1) FROM "challenge";')
+        yield cur.execute(('SELECT COUNT(1) FROM "challenge" '
+            'INNER JOIN "account" '
+            'ON "challenge"."acct_id" = "account"."acct_id" '
+            'WHERE "account"."type" >= %s;'),
+            (min_accttype,))
 
         if cur.rowcount != 1:
             return ('Eunk',None)
 
         total_chal = cur.fetchone()[0]
-
         return (None,{
             'total_chal':total_chal    
         })

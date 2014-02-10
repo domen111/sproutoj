@@ -35,10 +35,8 @@
         </tbody>
     </table>
     <ul class="pagin">
-    {% set idx = 1 %}
-    {% for off in range(0,chalstat['total_chal'],20) %}
-        <li><a href="?off={{ off }}">{{ idx }}</a></li>
-    {% set idx = idx + 1 %}
+    {% for i,off in enumerate(range(0,chalstat['total_chal'],20)) %}
+        <li><a href="?off={{ off }}">{{ i + 1 }}</a></li>
     {% end %}
     </ul>
 </div>

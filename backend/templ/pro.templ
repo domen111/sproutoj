@@ -81,10 +81,10 @@
 	    </tr>
 	</thead>
 	<tbody>
-        {% for i in range(len(pro['conf']['test'])) %}
+        {% for i,state in enumerate(test_state) %}
 	    <tr>
                 <td>{{ '%04d'%(i + 1) }}</td>
-                <td>{{ 0 }}</td>
+                <td>{{ state['solved'] }}</td>
 	    </tr>
         {% end %}
 	</tbody>

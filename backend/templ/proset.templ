@@ -1,3 +1,5 @@
+{% from chal import ChalService %}
+
 <link rel="stylesheet" type="text/css" href="/oj/proset.css">
 
 <script type="text/javascript">
@@ -16,7 +18,11 @@
 {% for pro in prolist %}
     <div class="g-r item">
         <div class="g-sm-1 id">{{ pro['pro_id'] }}</div>
-        <div class="g-sm-2 state">undo</div>
+        {% if pro['state'] == None %}
+            <div class="g-sm-2 light">Undo</div>
+        {% else %}
+            <div class="g-sm-2 state-{{ pro['state'] }}">{{ ChalService.STATE_STR[pro['state']] }}</div>
+        {% end %}
 	<div class="g-sm-5 name">
 	    <a href="/oj/pro/{{ pro['pro_id'] }}/">{{ pro['name'] }}</a>
 	</div>
