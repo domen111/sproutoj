@@ -82,6 +82,7 @@ class ManageHandler(RequestHandler):
                         pro_id,name,status,pack_token)
                 if err:
                     self.finish(err)
+                    return
 
                 self.finish('S')
                 return

@@ -36,12 +36,12 @@ class ProService:
 
         pro_id,name,status = cur.fetchone()
 
-        if status < ProService.STATUS_OFFLINE:
+        try:
             pro_f = open('problem/%d/conf.json'%pro_id)
             conf = json.load(pro_f)
             pro_f.close()
 
-        else:
+        except Exception:
             conf = None
 
         return (None,{
@@ -72,7 +72,7 @@ class ProService:
                 'AND "challenge"."acct_id" = %s '
                 'RIGHT JOIN "problem" '
                 'ON "challenge"."pro_id" = "problem"."pro_id" '
-                'AND "problem"."status" <= %s '
+                'WHERE "problem"."status" <= %s '
                 'GROUP BY "problem"."pro_id" '
                 'ORDER BY "pro_id" ASC;'),
                 (acct_id,max_status))
@@ -132,7 +132,7 @@ class ProService:
             (name,status,pro_id))
 
         if cur.rowcount != 1:
-            return ('Eunk',None)
+            return ('Enoext',None)
 
         if pack_token != None:
             err,ret = yield from self._unpack_pro(pro_id,pack_token)
@@ -154,13 +154,43 @@ class ProService:
         if err:
             return (err,None)
 
-        os.chmod('problem/%d'%pro_id,0o755)
         try:
+            os.chmod('problem/%d'%pro_id,0o755)
             os.symlink(os.path.abspath('problem/%d/http'%pro_id),
                     '../http/problem/%d'%pro_id)
 
         except FileExistsError:
             pass
+
+        try:
+            conf_f = open('problem/%d/conf.json'%pro_id)
+            conf = json.load(conf_f)
+            conf_f.close()
+
+        except Exception:
+            return ('Econf',None)
+
+        comp_type = conf['compile']
+        score_type = conf['score']
+        check_type = conf['check']
+        timelimit = conf['timelimit']
+        memlimit = conf['memlimit']
+
+        cur = yield self.db.cursor()
+        yield cur.execute('DELETE FROM "test_config" WHERE "pro_id" = %s;',
+                (pro_id,))
+
+        for test_idx,test_conf in enumerate(conf['test']):
+            metadata = {
+                'data':test_conf['data'],
+                'weight':test_conf['weight']
+            } 
+            yield cur.execute(('INSERT INTO "test_config" '
+                '("pro_id","test_idx","compile_type","score_type","check_type",'
+                '"timelimit","memlimit","metadata") '
+                'VALUES (%s,%s,%s,%s,%s,%s,%s,%s);'),
+                (pro_id,test_idx,comp_type,score_type,check_type,
+                    timelimit,memlimit,json.dumps(metadata)))
 
         return (None,None)
 
@@ -192,6 +222,7 @@ class ProHandler(RequestHandler):
                 'solved':0    
             })
 
+            '''
         cur = yield self.db.cursor()
         yield cur.execute(('SELECT '
             '"count_test"."test_idx",'
@@ -205,6 +236,7 @@ class ProHandler(RequestHandler):
         
         for test_idx,solved in cur:
             test_state[test_idx]['solved'] = solved
+            '''
 
         self.render('pro',pro = pro,test_state = test_state)
         return
@@ -217,7 +249,6 @@ class SubmitHandler(RequestHandler):
             return
 
         pro_id = int(pro_id)
-
         err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
         if err:
             self.finish(err)

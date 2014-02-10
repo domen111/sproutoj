@@ -10,8 +10,8 @@
 <div id="prolist" class="g-lg-8 g-off-lg-2">
     <div class="g-r head">
         <div class="g-sm-1">#</div>
-        <div class="g-sm-2">State</div>
-        <div class="g-sm-5">Problem Name</div>
+        <div class="g-sm-3">State</div>
+        <div class="g-sm-4">Problem Name</div>
         <div class="g-sm-2">Score</div>
         <div class="g-sm-2">Ratio</div>
     </div>
@@ -19,18 +19,18 @@
     <div class="g-r item">
         <div class="g-sm-1 id">{{ pro['pro_id'] }}</div>
         {% if pro['state'] == None %}
-            <div class="g-sm-2 light">Undo</div>
+            <div class="g-sm-3 light">Undo</div>
         {% else %}
-            <div class="g-sm-2 state-{{ pro['state'] }}">{{ ChalService.STATE_STR[pro['state']] }}</div>
+            <div class="g-sm-3 state-{{ pro['state'] }}">{{ ChalService.STATE_STR[pro['state']] }}</div>
         {% end %}
-	<div class="g-sm-5 name">
+	<div class="g-sm-4 name">
 	    <a href="/oj/pro/{{ pro['pro_id'] }}/">{{ pro['name'] }}</a>
 	</div>
         <div class="g-sm-2 score">
-	    <span>290</span>
+	    <span></span>
 	</div>
 	<div class="g-sm-2 ratio">
-	    <span>21</span> / <span class="light">32</span>
+	    <span></span><span class="light"></span>
         </div>
     </div>
 {% end %}

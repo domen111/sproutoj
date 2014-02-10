@@ -20,12 +20,16 @@ class PackHandler(WebSocketHandler):
             size = len(msg)
             if size > PackHandler.CHUNK_MAX or size > self.remain:
                 self.write_message('Echunk')
+                self.output.close()
+                self.output = None
                 return
 
             self.output.write(msg)
         
             self.remain -= size
             self.write_message('S')
+            self.output.close()
+            self.output = None
             return
 
         elif self.state == PackHandler.STATE_HDR:

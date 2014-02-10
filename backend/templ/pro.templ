@@ -4,51 +4,65 @@
     function init(){
 	var j_cont = $('#cont');
 
-	PDFJS.getDocument(
-		'/oj/problem/{{ pro['pro_id'] }}/cont.pdf').then(function(pdf){
-	    var i;
+        function _load_html(){
+            j_cont.load('/oj/problem/{{ pro['pro_id'] }}/cont.html',function(res,status,xhr){
+                if(status == 'error'){
+                    _load_pdf();
+                }else{
+		    j_cont.find('pre > code').each(function(i,e){
+                        hljs.highlightBlock(e)
+                    });
+                }      
+            });
+        }
+        function _load_pdf(){
+            PDFJS.getDocument('/oj/problem/{{ pro['pro_id'] }}/cont.pdf').then(function(pdf){
+                var i;
 
-	    for(i = 0;i < /*pdf.numPages*/3;i++){
-		pdf.getPage(i + 1).then(function(idx){return function(page){
-		    var j_canvas = $('<canvas style="width:100%; margin-bottom:16px; display:block;"></canvas>');;
-		    var j_div = $('<div></div>');
-		    var ctx = j_canvas[0].getContext('2d');
-		    var offset;
-		    var viewport;
+                for(i = 0;i < pdf.numPages;i++){
+                    pdf.getPage(i + 1).then(function(idx){return function(page){
+                        var j_canvas = $('<canvas style="width:100%; margin-bottom:16px; display:block;"></canvas>');;
+                        var j_div = $('<div></div>');
+                        var ctx = j_canvas[0].getContext('2d');
+                        var offset;
+                        var viewport;
 
-		    j_cont.append(j_canvas);
+                        j_cont.append(j_canvas);
 
-		    offset = j_canvas.offset();
-		    viewport = page.getViewport(
-			j_canvas.width() / page.getViewport(1.0).width);
-		    
-		    j_canvas.attr('width',viewport.width);
-		    j_canvas.attr('height',viewport.height);
+                        offset = j_canvas.offset();
+                        viewport = page.getViewport(
+                            j_canvas.width() / page.getViewport(1.0).width);
+                        
+                        j_canvas.attr('width',viewport.width);
+                        j_canvas.attr('height',viewport.height);
 
-		    j_div.addClass('textlayer');
-		    j_div.css('width',viewport.width);
-		    j_div.css('height',viewport.height);
-		    j_div.offset({'top':offset.top,'left':offset.left});
+                        j_div.addClass('textlayer');
+                        j_div.css('width',viewport.width);
+                        j_div.css('height',viewport.height);
+                        j_div.offset({'top':offset.top,'left':offset.left});
 
-		    j_cont.append(j_div);
+                        j_cont.append(j_div);
 
-		    page.getTextContent().then(function(text){
-			var textlayer = new TextLayerBuilder({
-			    'textLayerDiv': j_div[0],
-			    'pageIndex':idx
-			});
+                        page.getTextContent().then(function(text){
+                            var textlayer = new TextLayerBuilder({
+                                'textLayerDiv': j_div[0],
+                                'pageIndex':idx
+                            });
 
-			textlayer.setTextContent(text);
+                            textlayer.setTextContent(text);
 
-			page.render({
-			    'canvasContext':ctx,
-			    'viewport':viewport,
-			    'textLayer':textlayer
-			});
-		    });
-		};}(i + 1));
-	    }
-	});
+                            page.render({
+                                'canvasContext':ctx,
+                                'viewport':viewport,
+                                'textLayer':textlayer
+                            });
+                        });
+                    };}(i + 1));
+                }
+            });
+        }
+
+        _load_html();
     }
 </script>
 
