@@ -27,17 +27,15 @@ from pack import PackService
 class IndexHandler(RequestHandler):
     @reqenv
     def get(self):
-        name = ''
         manage = False
 
-        if self.acct_id != None:
-            err,user = yield from UserService.inst.getinfo(self.acct_id)
-            if err:
-                name = ''
+        if self.acct['acct_id'] == UserService.ACCTID_GUEST:
+            name = ''
 
-            name = user['name']
+        else:
+            name = self.acct['name']
 
-            if user['type'] == UserService.ACCTTYPE_KERNEL:
+            if self.acct['acct_type'] == UserService.ACCTTYPE_KERNEL:
                 manage = True
 
         self.render('index',name = name,manage = manage)

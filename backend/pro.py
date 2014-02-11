@@ -152,7 +152,7 @@ class ProService:
         return (None,None)
 
     def _get_acct_limit(self,acct):
-        if acct['type'] == UserService.ACCTTYPE_KERNEL:
+        if acct['acct_type'] == UserService.ACCTTYPE_KERNEL:
             return ProService.STATUS_OFFLINE
 
         else:
@@ -184,7 +184,7 @@ class ProService:
         score_type = conf['score']
         check_type = conf['check']
         timelimit = conf['timelimit']
-        memlimit = conf['memlimit']
+        memlimit = conf['memlimit'] * 1024
 
         cur = yield self.db.cursor()
         yield cur.execute('DELETE FROM "test_config" WHERE "pro_id" = %s;',
@@ -298,13 +298,14 @@ class SubmitHandler(RequestHandler):
                 return
 
         elif (reqtype == 'rechal' and
-                self.acct['type'] == UserService.ACCTTYPE_KERNEL):
+                self.acct['acct_type'] == UserService.ACCTTYPE_KERNEL):
+
             chal_id = int(self.get_argument('chal_id'))
 
             err,ret = yield from ChalService.inst.reset_chal(chal_id)
-            err,chal = yield from ChalService.inst.get_chal(chal_id)
-            pro_id = chal['pro_id']
+            err,chal = yield from ChalService.inst.get_chal(chal_id,self.acct)
 
+            pro_id = chal['pro_id']
             err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
             if err:
                 self.finish(err)
@@ -319,7 +320,7 @@ class SubmitHandler(RequestHandler):
                 pro_id,
                 pro['testm_conf'],
                 os.path.abspath('code/%d/main.cpp'%chal_id),
-                os.path.abspath('problem/%d/testdata'%pro_id))
+                os.path.abspath('problem/%d/res'%pro_id))
         if err:
             self.finish(err)
             return
@@ -337,9 +338,9 @@ class ChalListHandler(RequestHandler):
             off = 0
 
         err,chalstat = yield from ChalService.inst.get_stat(
-                min(self.acct['type'],UserService.ACCTTYPE_MEMBER))
+                min(self.acct['acct_type'],UserService.ACCTTYPE_MEMBER))
         err,challist = yield from ChalService.inst.list_chal(
-                off,20,min(self.acct['type'],UserService.ACCTTYPE_MEMBER))
+                off,20,min(self.acct['acct_type'],UserService.ACCTTYPE_MEMBER))
 
         self.render('challist',chalstat = chalstat,challist = challist)
         return
@@ -363,7 +364,7 @@ class ChalHandler(RequestHandler):
             self.finish(err)
             return
 
-        if self.acct['type'] == UserService.ACCTTYPE_KERNEL:
+        if self.acct['acct_type'] == UserService.ACCTTYPE_KERNEL:
             rechal = True
 
         else:

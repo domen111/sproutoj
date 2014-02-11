@@ -60,7 +60,7 @@ class UserService:
 
         try:
             yield cur.execute(('INSERT INTO "account" '
-                '("mail","password","name","type") '
+                '("mail","password","name","acct_type") '
                 'VALUES (%s,%s,%s,%s) RETURNING "acct_id";'),
                 (mail,base64.b64encode(hpw).decode('utf-8'),name,
                     UserService.ACCTTYPE_USER))
@@ -95,25 +95,25 @@ class UserService:
         acct = yield self.mc.get('account@%d'%acct_id)
         if acct == None:
             cur = yield self.db.cursor()
-            yield cur.execute(('SELECT "mail","name","type" FROM "account" '
-                'WHERE "acct_id" = %s;'),
+            yield cur.execute(('SELECT "mail","name","acct_type" '
+                'FROM "account" WHERE "acct_id" = %s;'),
                 (acct_id,))
 
             if cur.rowcount != 1:
                 return ('Enoext',None)
 
-            mail,name,typ = cur.fetchone()
+            mail,name,acct_type = cur.fetchone()
             acct = {
                 'acct_id':acct_id,
+                'acct_type':acct_type,
                 'mail':mail,
-                'name':name,
-                'type':typ
+                'name':name
             }
 
             yield self.mc.set('account@%d'%acct_id,acct)
 
         return (None,{
             'acct_id':acct['acct_id'],
-            'name':acct['name'],
-            'type':acct['type']
+            'acct_type':acct['acct_type'],
+            'name':acct['name']
         })

@@ -16,8 +16,8 @@ class RequestHandler(tornado.web.RequestHandler):
     def render(self,templ,**kwargs):
         tpldr = tornado.template.Loader('templ')
 
-        if self.acct_id != None:
-            kwargs['acct_id'] = self.acct_id
+        if self.acct['acct_id'] != UserService.ACCTID_GUEST:
+            kwargs['acct_id'] = self.acct['acct_id']
         
         else:
             kwargs['acct_id'] = ''
@@ -31,11 +31,9 @@ def reqenv(func):
         err,acct_id = yield from UserService.inst.getsign(self)
         if err == None:
             err,acct = yield from UserService.inst.getinfo(acct_id)
-            self.acct_id = acct_id
             self.acct = acct
 
         else:
-            self.acct_id = None
             self.acct = {
                 'acct_id':0,
                 'mail':'',

@@ -9,7 +9,7 @@ from pro import ProService
 class ManageHandler(RequestHandler):
     @reqenv
     def get(self,page = 'dash'):
-        if self.acct['type'] != UserService.ACCTTYPE_KERNEL:
+        if self.acct['acct_type'] != UserService.ACCTTYPE_KERNEL:
             self.finish('Eacces')
             return
 
@@ -41,7 +41,7 @@ class ManageHandler(RequestHandler):
 
     @reqenv
     def post(self,page):
-        if self.acct['type'] != UserService.ACCTTYPE_KERNEL:
+        if self.acct['acct_type'] != UserService.ACCTTYPE_KERNEL:
             self.finish('Eacces')
             return
 

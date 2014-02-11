@@ -82,7 +82,7 @@ class PackService():
                 os.remove('tmp/%s.tar.xz'%pack_token)
 
                 sub = tornado.process.Subprocess(
-                        ['/bin/bash','newline.sh','%s/testdata'%dst])
+                        ['/bin/bash','newline.sh','%s/res/testdata'%dst])
                 sub.set_exit_callback(__trans_cb)
 
             def __trans_cb(code):

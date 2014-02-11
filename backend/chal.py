@@ -59,7 +59,8 @@ class ChalService:
         yield cur.execute('DELETE FROM "test" WHERE "chal_id" = %s;',
                 (chal_id,))
 
-        yield cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
+        cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
+        cur.execute('REFRESH MATERIALIZED VIEW test_count;')
 
         return (None,None)
 
@@ -96,7 +97,7 @@ class ChalService:
             })
         
         if (acct['acct_id'] == acct_id or
-                acct['type'] == UserService.ACCTTYPE_KERNEL):
+                acct['acct_type'] == UserService.ACCTTYPE_KERNEL):
             code_f = open('code/%d/main.cpp'%chal_id,'rb')
             code = code_f.read().decode('utf-8')
             code_f.close()
@@ -117,48 +118,34 @@ class ChalService:
     def emit_chal(self,chal_id,pro_id,testm_conf,code_path,res_path):
         cur = yield self.db.cursor()
 
-        testm = {}
+        testl = list()
         for test_idx,test_conf in testm_conf.items():
-            testm[test_idx] = {
-                'state':ChalService.STATE_JUDGE,
+            testl.append({
+                'test_idx':test_idx,
                 'comp_type':test_conf['comp_type'],
                 'check_type':test_conf['check_type'],
                 'timelimit':test_conf['timelimit'],
                 'memlimit':test_conf['memlimit'],
                 'metadata':test_conf['metadata']
-            }
+            })
 
             yield cur.execute(('INSERT INTO "test" '
                 '("chal_id","pro_id","test_idx","state") '
                 'VALUES (%s,%s,%s,%s);'),
                 (chal_id,pro_id,test_idx,ChalService.STATE_JUDGE))
 
-        yield cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
-        #yield cur.execute('REFRESH MATERIALIZED VIEW count_test;')
+        cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
+        cur.execute('REFRESH MATERIALIZED VIEW test_count;')
 
         if self.ws == None:
             self.ws = yield websocket_connect('ws://localhost:2501/judge')
 
         self.ws.write_message(json.dumps({
             'chal_id':chal_id,
-            'testm':testm,
+            'testl':testl,
             'code_path':code_path,
             'res_path':res_path
         }))
-
-        return (None,None)
-
-    def update_test(self,chal_id,test_idx,state,runtime,memory):
-        cur = yield self.db.cursor()
-        yield cur.execute(('UPDATE "test" '
-            'SET "state" = %s,"runtime" = %s,"memory" = %s '
-            'WHERE "chal_id" = %s AND "test_idx" = %s;'),
-            (state,runtime,memory,chal_id,test_idx))
-
-        if cur.rowcount != 1:
-            return ('Enoext',None)
-
-        yield cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
 
         return (None,None)
 
@@ -178,7 +165,7 @@ class ChalService:
             'ON "challenge"."acct_id" = "account"."acct_id" '
             'INNER JOIN "collect_test" '
             'ON "challenge"."chal_id" = "collect_test"."chal_id" '
-            'WHERE "account"."type" >= %s '
+            'WHERE "account"."acct_type" >= %s '
             'ORDER BY "challenge"."timestamp" DESC OFFSET %s LIMIT %s;'),
             (min_accttype,off,num))
         
@@ -203,7 +190,7 @@ class ChalService:
         yield cur.execute(('SELECT COUNT(1) FROM "challenge" '
             'INNER JOIN "account" '
             'ON "challenge"."acct_id" = "account"."acct_id" '
-            'WHERE "account"."type" >= %s;'),
+            'WHERE "account"."acct_type" >= %s;'),
             (min_accttype,))
 
         if cur.rowcount != 1:
@@ -213,6 +200,21 @@ class ChalService:
         return (None,{
             'total_chal':total_chal    
         })
+
+    def update_test(self,chal_id,test_idx,state,runtime,memory):
+        cur = yield self.db.cursor()
+        yield cur.execute(('UPDATE "test" '
+            'SET "state" = %s,"runtime" = %s,"memory" = %s '
+            'WHERE "chal_id" = %s AND "test_idx" = %s;'),
+            (state,runtime,memory,chal_id,test_idx))
+
+        if cur.rowcount != 1:
+            return ('Enoext',None)
+
+        cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
+        cur.execute('REFRESH MATERIALIZED VIEW test_count;')
+
+        return (None,None)
 
     @coroutine
     def _collect_judge(self):
