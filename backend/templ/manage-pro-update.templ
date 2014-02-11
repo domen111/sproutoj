@@ -8,8 +8,10 @@
 	var j_upload = $('#upload');
 
 	j_form.find('button.submit').on('click',function(e){
+            var j_bar = j_upload.find('div.prog > div.bar');
 	    var name = j_form.find('input.name').val();
 	    var status = j_form.find('select.status').val();
+            var expire = j_form.find('input.date').val();
 	    var files = j_form.find('input.file')[0].files;
 	    var pack_token = '';
 	    
@@ -19,11 +21,32 @@
 		    'pro_id':{{ pro['pro_id'] }},
 		    'name':name,
 		    'status':status,
+                    'expire':expire,
 		    'pack_token':pack_token
 		},function(res){
-		    index.go('/oj/manage/pro/');
+                    var msg = 'Unknown';
+
+                    if(res[0] == 'E'){
+                        if(res == 'Enamemin'){
+			    msg = 'Name length < min';
+                        }else if(res == 'Enamemax'){
+                            msg = 'Name length > max';
+                        }
+
+                        if(pack_token == ''){
+                            j_form.find('div.print').print(msg);
+                        }else{
+                            j_upload.find('div.print').print(msg);
+                        }
+                    }else{
+		        index.go('/oj/manage/pro/');
+                    }
 		});
 	    }
+
+            if(expire != ''){
+                expire = new Date(expire + ' +0800').toISOString();
+            }
 
 	    if(files.length == 0){
 		_update();
@@ -57,6 +80,7 @@
 	    <option value=1{% if pro['status'] == 1 %} selected{% end %}>Hidden</option>
 	    <option value=2{% if pro['status'] == 2 %} selected{% end %}>Offline</option>
 	</select>
+        <input type="text" class="date" value="{% if pro['expire'] != None %}{{ pro['expire'].strftime('%Y/%m/%d %H:%M') }}{% end %}" placeholder="Deadline [Year / Month / Day Hour : Minute]">
 	<input type="file" class="file">
 	<button class="btn-con submit">Update</button>
 	<button class="btn-def cancel">Cancel</button>
@@ -67,6 +91,7 @@
 	<div class="blk-prog prog">
 	    <div class="bar"></div>
 	</div>
+	<div class="print"></div>
     </div>
 </div>
 {% end %}

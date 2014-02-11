@@ -1,4 +1,5 @@
 import json
+import datetime
 
 from req import RequestHandler
 from req import reqenv
@@ -73,13 +74,26 @@ class ManageHandler(RequestHandler):
                 pro_id = int(self.get_argument('pro_id'))
                 name = self.get_argument('name')
                 status = int(self.get_argument('status'))
+                expire = self.get_argument('expire')
                 pack_token = self.get_argument('pack_token')
+
+                if expire == '':
+                    expire = None
+
+                else:
+                    try:
+                        expire = datetime.datetime.strptime(expire,
+                                '%Y-%m-%dT%H:%M:%S.%fZ')
+
+                    except ValueError:
+                        self.finish('Eexpire')
+                        return
 
                 if pack_token == '':
                     pack_token = None
 
                 err,ret = yield from ProService.inst.update_pro(
-                        pro_id,name,status,pack_token)
+                        pro_id,name,status,expire,pack_token)
                 if err:
                     self.finish(err)
                     return

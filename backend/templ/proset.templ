@@ -7,12 +7,40 @@
     }
 </script>
 
-<div id="prolist" class="g-lg-8 g-off-lg-2">
+<div class="g-lg-3">
+    <table id="filter">
+        <thead>
+            <tr>
+                <th>Filter</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Class</td>
+                <td><select>
+                    <option>All</option>
+                    <option>Basic</option>
+                    <option>Advanced</option>
+                </select></td>
+            </tr>
+            <tr>
+                <td>Deadline</td>
+                <td><select>
+                    <option>All</option>
+                    <option>Over</option>
+                    <option>Coming</option>
+                </select></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<div id="prolist" class="g-lg-9">
     <div class="g-r head">
         <div class="g-sm-1">#</div>
         <div class="g-sm-3">State</div>
         <div class="g-sm-4">Problem Name</div>
-        <div class="g-sm-2">Score</div>
+        <div class="g-sm-2">Point</div>
         <div class="g-sm-2">Ratio</div>
     </div>
 {% for pro in prolist %}

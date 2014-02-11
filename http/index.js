@@ -70,7 +70,7 @@ var index = new function(){
 	j_navlist.find('li').removeClass('active');
 	j_navlist.find('li.' + page).addClass('active');
 
-	j_cont.stop().fadeOut(200);
+	j_cont.stop().fadeOut(100);
 	$(window).scrollTop(0);
 	$.get('/oj/be' + req,args,function(res){
 	    j_cont.empty();
@@ -79,13 +79,27 @@ var index = new function(){
 		Update page, run page init function
 	    */
 	    j_cont.html(res).ready(function(){
+                var defer;
+
 		$('pre > code').each(function(i,e){hljs.highlightBlock(e)});
 
 		if(typeof(init) == 'function'){
 		    init();    
 		}
+	        
+                defer = Array();
+                j_cont.find('link').each(function(i,e){
+                    defer[i] = $.Deferred();
+
+                    $(e).load(function(){
+                        defer[i].resolve();
+                    });
+                });
+
+                $.when.apply($,defer).done(function(){
+                    j_cont.stop().fadeIn(100);
+                });
 	    });
-	    j_cont.stop().fadeIn(100);
 
 	    _scroll();
 	});

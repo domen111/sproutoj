@@ -1,11 +1,18 @@
 @import "blk-inc.less";
 
+#filter{
+    & > tbody td > select{
+        width:100%;
+    }
+}
+
 #prolist{
     & > div.head{
         margin-bottom:16px;
-        height:32px;
+        height:48px;
         color:@gray;
         font-weight:bold;
+        line-height:48px;
         border-bottom:@gray 1px solid;
     }
     & > div.item{

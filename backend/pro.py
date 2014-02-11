@@ -28,14 +28,14 @@ class ProService:
         max_status = self._get_acct_limit(acct)
 
         cur = yield self.db.cursor()
-        yield cur.execute(('SELECT "name","status" FROM "problem" '
+        yield cur.execute(('SELECT "name","status","expire" FROM "problem" '
             'WHERE "pro_id" = %s AND "status" <= %s;'),
             (pro_id,max_status))
 
         if cur.rowcount != 1:
             return ('Enoext',None)
 
-        name,status = cur.fetchone()
+        name,status,expire = cur.fetchone()
 
         yield cur.execute(('SELECT "test_idx","compile_type","score_type",'
             '"check_type","timelimit","memlimit","metadata" '
@@ -58,6 +58,7 @@ class ProService:
             'pro_id':pro_id,
             'name':name,
             'status':status,
+            'expire':expire,
             'testm_conf':testm_conf
         })
 
@@ -126,7 +127,7 @@ class ProService:
 
         return (None,pro_id)
 
-    def update_pro(self,pro_id,name,status,pack_token = None):
+    def update_pro(self,pro_id,name,status,expire,pack_token = None):
         if len(name) < ProService.NAME_MIN:
             return ('Enamemin',None)
         if len(name) > ProService.NAME_MAX:
@@ -137,9 +138,9 @@ class ProService:
 
         cur = yield self.db.cursor()
         yield cur.execute(('UPDATE "problem" '
-            'SET "name" = %s,"status" = %s '
+            'SET "name" = %s,"status" = %s,"expire" = %s '
             'WHERE "pro_id" = %s;'),
-            (name,status,pro_id))
+            (name,status,expire,pro_id))
 
         if cur.rowcount != 1:
             return ('Enoext',None)
@@ -177,7 +178,8 @@ class ProService:
             conf = json.load(conf_f)
             conf_f.close()
 
-        except Exception:
+        except Exception as e:
+            print(e)
             return ('Econf',None)
 
         comp_type = conf['compile']
