@@ -66,6 +66,7 @@ class ManageHandler(RequestHandler):
                         name,status,pack_token)
                 if err:
                     self.finish(err)
+                    return
 
                 self.finish(json.dumps(pro_id))
                 return

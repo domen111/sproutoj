@@ -27,9 +27,12 @@ class PackHandler(WebSocketHandler):
             self.output.write(msg)
         
             self.remain -= size
+
+            if self.remain == 0:
+                self.output.close()
+                self.output = None
+
             self.write_message('S')
-            self.output.close()
-            self.output = None
             return
 
         elif self.state == PackHandler.STATE_HDR:

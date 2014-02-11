@@ -163,7 +163,7 @@ class ChalService:
             'FROM "challenge" '
             'INNER JOIN "account" '
             'ON "challenge"."acct_id" = "account"."acct_id" '
-            'INNER JOIN "challenge_state" '
+            'LEFT JOIN "challenge_state" '
             'ON "challenge"."chal_id" = "challenge_state"."chal_id" '
             'WHERE "account"."acct_type" >= %s '
             'ORDER BY "challenge"."timestamp" DESC OFFSET %s LIMIT %s;'),
@@ -172,6 +172,15 @@ class ChalService:
         challist = list()
         for (chal_id,pro_id,acct_id,timestamp,acct_name,
                 state,runtime,memory) in cur:
+            if state == None:
+                state = ChalService.STATE_JUDGE
+
+            if runtime == None:
+                runtime = 0
+
+            if memory == None:
+                memory = 0
+
             challist.append({
                 'chal_id':chal_id,
                 'pro_id':pro_id,

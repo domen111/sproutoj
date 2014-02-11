@@ -31,6 +31,8 @@
 			    msg = 'Name length < min';
                         }else if(res == 'Enamemax'){
                             msg = 'Name length > max';
+                        }else if(res == 'Econf'){
+                            msg = 'Syntex error';  
                         }
 
                         if(pack_token == ''){
@@ -88,10 +90,10 @@
     </div>
     <div id="upload" class="hide">
 	<strong>Uploading ...</strong>
+	<div class="print"></div>
 	<div class="blk-prog prog">
 	    <div class="bar"></div>
-	</div>
-	<div class="print"></div>
+        </div>
     </div>
 </div>
 {% end %}
