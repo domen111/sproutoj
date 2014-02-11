@@ -62,13 +62,13 @@ class ProService:
             'testm_conf':testm_conf
         })
 
-    def list_pro(self,max_status = STATUS_ONLINE,acct_id = None):
+    def list_pro(self,acct,state = False):
         cur = yield self.db.cursor()
 
-        if acct_id == None:
-            yield cur.execute(('SELECT "pro_id","name","status",NULL '
-                'FROM "problem" '
-                'WHERE "status" <= %s ORDER BY "pro_id" ASC;'),
+        max_status = self._get_acct_limit(acct)
+        if state == False:
+            yield cur.execute(('SELECT "pro_id","name","status","expire",NULL '
+                'FROM "problem" WHERE "status" <= %s ORDER BY "pro_id" ASC;'),
                 (max_status,))
 
         else:
@@ -76,7 +76,8 @@ class ProService:
                 '"problem"."pro_id",'
                 '"problem"."name",'
                 '"problem"."status",'
-                'MIN("challenge_state"."state") '
+                '"problem"."expire",'
+                'MIN("challenge_state"."state") AS "state" '
                 'FROM "challenge" '
                 'INNER JOIN "challenge_state" '
                 'ON "challenge"."chal_id" = "challenge_state"."chal_id" '
@@ -86,20 +87,21 @@ class ProService:
                 'WHERE "problem"."status" <= %s '
                 'GROUP BY "problem"."pro_id" '
                 'ORDER BY "pro_id" ASC;'),
-                (acct_id,max_status))
+                (acct['acct_id'],max_status))
 
         prolist = list()
-        for pro_id,name,status,state in cur:
+        for pro_id,name,status,expire,state in cur:
             prolist.append({
                 'pro_id':pro_id,
                 'name':name,
                 'status':status,
+                'expire':expire,
                 'state':state
             })
 
         return (None,prolist)
 
-    def add_pro(self,name,status,pack_token = None):
+    def add_pro(self,name,status,expire,pack_token = None):
         size = len(name)
         if size < ProService.NAME_MIN:
             return ('Enamemin',None)
@@ -111,9 +113,9 @@ class ProService:
 
         cur = yield self.db.cursor()
         yield cur.execute(('INSERT INTO "problem" '
-            '("name","status") '
-            'VALUES (%s,%s) RETURNING "pro_id";'),
-            (name,status))
+            '("name","status","expire") '
+            'VALUES (%s,%s,%s) RETURNING "pro_id";'),
+            (name,status,expire))
 
         if cur.rowcount != 1:
             return ('Eunk',None)
@@ -178,8 +180,7 @@ class ProService:
             conf = json.load(conf_f)
             conf_f.close()
 
-        except Exception as e:
-            print(e)
+        except Exception:
             return ('Econf',None)
 
         comp_type = conf['compile']
@@ -210,7 +211,7 @@ class ProsetHandler(RequestHandler):
     @reqenv
     def get(self):
         err,prolist = yield from ProService.inst.list_pro(
-                acct_id = self.acct['acct_id'])
+                self.acct,state = True)
 
         self.render('proset',prolist = prolist)
         return

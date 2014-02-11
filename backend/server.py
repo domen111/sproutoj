@@ -100,7 +100,8 @@ if __name__ == '__main__':
     httpsock = tornado.netutil.bind_sockets(6000)
     #tornado.process.fork_processes(0)
 
-    db = pg.AsyncPG(config.DBNAME_OJ,config.DBUSER_OJ,config.DBPW_OJ)
+    db = pg.AsyncPG(config.DBNAME_OJ,config.DBUSER_OJ,config.DBPW_OJ,
+            dbtz = '+8')
     mc = mcd.AsyncMCD()
     UserService(db,mc)
     ProService(db,mc)

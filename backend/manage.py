@@ -21,8 +21,7 @@ class ManageHandler(RequestHandler):
             return
 
         elif page == 'pro':
-            err,prolist = yield from ProService.inst.list_pro(
-                    ProService.STATUS_OFFLINE)
+            err,prolist = yield from ProService.inst.list_pro(self.acct)
 
             self.render('manage-pro',page = page,prolist = prolist)
             return
@@ -62,10 +61,24 @@ class ManageHandler(RequestHandler):
             if reqtype == 'addpro':
                 name = self.get_argument('name')
                 status = int(self.get_argument('status'))
+                expire = self.get_argument('expire')
                 pack_token = self.get_argument('pack_token')
+                
+                if expire == '':
+                    expire = None
+
+                else:
+                    try:
+                        expire = datetime.datetime.strptime(expire,
+                                '%Y-%m-%dT%H:%M:%S.%fZ')
+                        expire = expire.replace(tzinfo = datetime.timezone.utc)
+
+                    except ValueError:
+                        self.finish('Eexpire')
+                        return
 
                 err,pro_id = yield from ProService.inst.add_pro(
-                        name,status,pack_token)
+                        name,status,expire,pack_token)
                 if err:
                     self.finish(err)
                     return
@@ -87,8 +100,10 @@ class ManageHandler(RequestHandler):
                     try:
                         expire = datetime.datetime.strptime(expire,
                                 '%Y-%m-%dT%H:%M:%S.%fZ')
+                        expire = expire.replace(tzinfo = datetime.timezone.utc)
 
-                    except ValueError:
+                    except ValueError as e:
+                        print(e)
                         self.finish('Eexpire')
                         return
 

@@ -19,6 +19,7 @@ var index = new function(){
 	var args;
 	var j_navlist = $('#index-navlist');
 	var j_cont = $('#index-cont');
+        var cont_defer = $.Deferred();
     
 	/*
 	    Adjust the scroll to right position
@@ -70,23 +71,16 @@ var index = new function(){
 	j_navlist.find('li').removeClass('active');
 	j_navlist.find('li.' + page).addClass('active');
 
-	j_cont.stop().fadeOut(100);
-	$(window).scrollTop(0);
-	$.get('/oj/be' + req,args,function(res){
-	    j_cont.empty();
-
-	    /*
-		Update page, run page init function
-	    */
-	    j_cont.html(res).ready(function(){
+	j_cont.stop().fadeOut(100,function(){cont_defer.done(function(res){
+            j_cont.html(res).ready(function(){
                 var defer;
 
-		$('pre > code').each(function(i,e){hljs.highlightBlock(e)});
+                $('pre > code').each(function(i,e){hljs.highlightBlock(e)});
 
-		if(typeof(init) == 'function'){
-		    init();    
-		}
-	        
+                if(typeof(init) == 'function'){
+                    init();    
+                }
+                
                 defer = Array();
                 j_cont.find('link').each(function(i,e){
                     defer[i] = $.Deferred();
@@ -99,9 +93,14 @@ var index = new function(){
                 $.when.apply($,defer).done(function(){
                     j_cont.stop().fadeIn(100);
                 });
-	    });
+            });
 
-	    _scroll();
+            _scroll();
+        });});
+
+	$(window).scrollTop(0);
+	$.get('/oj/be' + req,args,function(res){
+	    cont_defer.resolve(res);
 	});
     }
     that.init = function(){

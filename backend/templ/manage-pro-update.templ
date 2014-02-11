@@ -8,10 +8,9 @@
 	var j_upload = $('#upload');
 
 	j_form.find('button.submit').on('click',function(e){
-            var j_bar = j_upload.find('div.prog > div.bar');
 	    var name = j_form.find('input.name').val();
 	    var status = j_form.find('select.status').val();
-            var expire = j_form.find('input.date').val();
+            var expire = j_form.find('input.expire').val();
 	    var files = j_form.find('input.file')[0].files;
 	    var pack_token = '';
 	    
@@ -31,6 +30,8 @@
 			    msg = 'Name length < min';
                         }else if(res == 'Enamemax'){
                             msg = 'Name length > max';
+                        }else if(res == 'Eparam'){
+                            msg = 'Paramater Error';
                         }else if(res == 'Econf'){
                             msg = 'Syntex error';  
                         }
@@ -54,10 +55,12 @@
 		_update();
 	    }else{
 		pack.get_token().done(function(token){
-		    pack_token = token;    
+                    var j_bar = j_upload.find('div.prog > div.bar');
 
 		    j_form.hide();
 		    j_upload.show();
+
+                    pack_token = token;
 
 		    pack.send(pack_token,files[0]).done(function(){
 			_update();
@@ -82,7 +85,7 @@
 	    <option value=1{% if pro['status'] == 1 %} selected{% end %}>Hidden</option>
 	    <option value=2{% if pro['status'] == 2 %} selected{% end %}>Offline</option>
 	</select>
-        <input type="text" class="date" value="{% if pro['expire'] != None %}{{ pro['expire'].strftime('%Y/%m/%d %H:%M') }}{% end %}" placeholder="Deadline [Year / Month / Day Hour : Minute]">
+        <input type="text" class="expire" value="{% if pro['expire'] != None %}{{ pro['expire'].strftime('%Y/%m/%d %H:%M') }}{% end %}" placeholder="Deadline [Year / Month / Day Hour : Minute]">
 	<input type="file" class="file">
 	<button class="btn-con submit">Update</button>
 	<button class="btn-def cancel">Cancel</button>

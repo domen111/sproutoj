@@ -10,7 +10,12 @@
 	j_form.find('button.submit').on('click',function(e){
 	    var name = j_form.find('input.name').val();
 	    var status = j_form.find('select.status').val();
+            var expire = j_form.find('input.expire').val();
 	    var files = j_form.find('input.file')[0].files;
+            
+            if(expire != ''){
+                expire = new Date(expire + ' +0800').toISOString();
+            }
 
 	    if(files.length == 0){
 		j_form.find('div.print').print('No file selected');
@@ -28,9 +33,26 @@
                         'reqtype':'addpro',
                         'name':name,
                         'status':status,
+                        'expire':expire,
                         'pack_token':pack_token
                     },function(res){
-                        index.go('/oj/manage/pro/');
+                        msg = 'Unknown';
+
+                        if(res[0] == 'E'){
+                            if(res == 'Enamemin'){
+                                msg = 'Name length < min';
+                            }else if(res == 'Enamemax'){
+                                msg = 'Name length > max';
+                            }else if(res == 'Eparam'){
+                                msg = 'Paramater Error';
+                            }else if(res == 'Econf'){
+                                msg = 'Syntex error';  
+                            }
+
+                            j_upload.find('div.print').print(msg);
+                        }else{
+                            index.go('/oj/manage/pro/');
+                        }
                     });
                 }).progress(function(prog){
                     j_bar.css('width',(prog * 100) + '%');
@@ -52,6 +74,7 @@
 	    <option value=1>Hidden</option>
 	    <option value=2>Offline</option>
 	</select>
+        <input type="text" class="expire" placeholder="Deadline [Year / Month / Day Hour : Minute]">
 	<input type="file" class="file">
 	<button class="btn-con submit">Upload</button>
 	<button class="btn-def cancel">Cancel</button>
@@ -59,6 +82,7 @@
     </div>
     <div id="upload" class="hide">
 	<strong>Uploading ...</strong>
+	<div class="print"></div>
 	<div class="blk-prog prog">
 	    <div class="bar"></div>
 	</div>

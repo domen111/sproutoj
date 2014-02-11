@@ -19,6 +19,8 @@
             PDFJS.getDocument('/oj/problem/{{ pro['pro_id'] }}/cont.pdf').then(function(pdf){
                 var i;
 
+                j_cont.empty();
+
                 for(i = 0;i < pdf.numPages;i++){
                     pdf.getPage(i + 1).then(function(idx){return function(page){
                         var j_canvas = $('<canvas style="width:100%; margin-bottom:16px; display:block;"></canvas>');;
@@ -119,8 +121,7 @@
         {% end %}
 	</tbody>
     </table>
-
-
 </div>
 <div id="cont" class="g-lg-10">
+    <strong>Loading...</strong>
 </div>
