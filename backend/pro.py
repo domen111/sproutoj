@@ -75,10 +75,10 @@ class ProService:
                 '"problem"."pro_id",'
                 '"problem"."name",'
                 '"problem"."status",'
-                'MIN("collect_test"."state") '
+                'MIN("challenge_state"."state") '
                 'FROM "challenge" '
-                'INNER JOIN "collect_test" '
-                'ON "challenge"."chal_id" = "collect_test"."chal_id" '
+                'INNER JOIN "challenge_state" '
+                'ON "challenge"."chal_id" = "challenge_state"."chal_id" '
                 'AND "challenge"."acct_id" = %s '
                 'RIGHT JOIN "problem" '
                 'ON "challenge"."pro_id" = "problem"."pro_id" '
@@ -209,6 +209,7 @@ class ProsetHandler(RequestHandler):
     def get(self):
         err,prolist = yield from ProService.inst.list_pro(
                 acct_id = self.acct['acct_id'])
+
         self.render('proset',prolist = prolist)
         return
 
@@ -236,21 +237,19 @@ class ProHandler(RequestHandler):
                 'solved':0
             })
 
-            '''
         cur = yield self.db.cursor()
-        yield cur.execute(('SELECT '
-            '"count_test"."test_idx",'
-            'SUM("count_test"."count") AS "solved" '
-            'FROM "count_test" '
-            'INNER JOIN "challenge" '
-            'ON "count_test"."chal_id" = "challenge"."chal_id" '
-            'WHERE "count_test"."state" = %s AND "count_test"."type" = %s '
-            'GROUP BY "count_test"."test_idx";'),
-            (ChalService.STATE_AC,UserService.ACCTTYPE_MEMBER))
+        yield cur.execute(('SELECT "test_idx","count" FROM "test_count" '
+            'WHERE "pro_id" = %s AND "state" = %s AND "acct_type" = %s '
+            'ORDER BY "test_idx" ASC;'),
+            (pro_id,ChalService.STATE_AC,UserService.ACCTTYPE_MEMBER))
         
-        for test_idx,solved in cur:
-            test_state[test_idx]['solved'] = solved
-            '''
+        countmap = {}
+        for test_idx,countmap in cur:
+            countm[test_idx] = count
+
+        for test in testl:
+            if test['test_idx'] in countmap:
+                test['solved'] = countmap[test['test_idx']]
 
         self.render('pro',pro = {
             'pro_id':pro['pro_id'],
