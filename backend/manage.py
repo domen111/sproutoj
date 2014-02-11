@@ -1,3 +1,4 @@
+import os
 import json
 import datetime
 
@@ -6,6 +7,7 @@ from req import reqenv
 from user import UserService
 from pack import PackService
 from pro import ProService
+from chal import ChalService
 
 class ManageHandler(RequestHandler):
     @reqenv
@@ -98,6 +100,31 @@ class ManageHandler(RequestHandler):
                 if err:
                     self.finish(err)
                     return
+
+                self.finish('S')
+                return
+
+            elif reqtype == 'rechal':
+                pro_id = int(self.get_argument('pro_id'))
+
+                err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
+                if err:
+                    self.finish(err)
+                    return
+
+                cur = yield self.db.cursor()
+                yield cur.execute(('SELECT "chal_id" FROM "challenge" '
+                    'WHERE "pro_id" = %s'),
+                    (pro_id,))
+
+                for chal_id, in cur:
+                    err,ret = yield from ChalService.inst.reset_chal(chal_id)
+                    err,ret = yield from ChalService.inst.emit_chal(
+                            chal_id,
+                            pro_id,
+                            pro['testm_conf'],
+                            os.path.abspath('code/%d/main.cpp'%chal_id),
+                            os.path.abspath('problem/%d/res'%pro_id))
 
                 self.finish('S')
                 return
