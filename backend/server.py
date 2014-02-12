@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import math
 import pg
 import mcd
 import tornado.ioloop
@@ -88,8 +89,47 @@ class SignHandler(RequestHandler):
 
 class AcctHandler(RequestHandler):
     @reqenv
-    def get(self):
-        self.render('acct')
+    def get(self,acct_id):
+        acct_id = int(acct_id)
+
+        err,acct = yield from UserService.inst.getinfo(acct_id)
+        if err:
+            self.finish(err)
+            return
+
+        cur = yield self.db.cursor()
+        yield cur.execute('SELECT '
+                'SUM("test_valid_rate"."rate" * "test_config"."weight") '
+                'AS "rate" FROM "test_valid_rate" '
+                'INNER JOIN ('
+                '    SELECT DISTINCT "test"."pro_id","test"."test_idx" '
+                '    FROM "test" '
+                '    INNER JOIN "account" '
+                '    ON "test"."acct_id" = "account"."acct_id" '
+                '    INNER JOIN "problem" '
+                '    ON "test"."pro_id" = "problem"."pro_id" '
+                '    WHERE "account"."acct_id" = %s '
+                '    AND "test"."state" = %s '
+                '    AND "account"."class" && "problem"."class"'
+                ') AS "valid_test" '
+                'ON "test_valid_rate"."pro_id" = "valid_test"."pro_id" '
+                'AND "test_valid_rate"."test_idx" = "valid_test"."test_idx" '
+                'INNER JOIN "test_config" '
+                'ON "test_valid_rate"."pro_id" = "test_config"."pro_id" '
+                'AND "test_valid_rate"."test_idx" = "test_config"."test_idx";',
+                (acct_id,ChalService.STATE_AC))
+        if cur.rowcount != 1:
+            self.finish('Unknown')
+            return
+        
+        rate = cur.fetchone()[0]
+        if rate == None:
+            rate = 0
+        
+        else:
+            rate = math.floor(rate / 100)
+
+        self.render('acct',acct = acct,rate = rate)
         return
 
     @reqenv
@@ -115,7 +155,7 @@ if __name__ == '__main__':
     app = tornado.web.Application([
         ('/index',IndexHandler,args),
         ('/sign',SignHandler,args),
-        ('/acct',AcctHandler,args),
+        ('/acct/(.*)',AcctHandler,args),
         ('/proset',ProsetHandler,args),
         ('/pro/(.*)',ProHandler,args),
         ('/submit',SubmitHandler,args),
