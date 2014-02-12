@@ -184,7 +184,8 @@ CREATE TABLE test_config (
     memlimit integer,
     score_type character varying,
     check_type character varying,
-    metadata character varying DEFAULT '{}'::character varying
+    metadata character varying DEFAULT '{}'::character varying,
+    weight integer
 );
 
 

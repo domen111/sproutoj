@@ -39,12 +39,12 @@ class ProService:
         name,status,expire = cur.fetchone()
 
         yield cur.execute(('SELECT "test_idx","compile_type","score_type",'
-            '"check_type","timelimit","memlimit","metadata" '
+            '"check_type","timelimit","memlimit","weight","metadata" '
             'FROM "test_config" WHERE "pro_id" = %s ORDER BY "test_idx" ASC;'),
             (pro_id,))
 
         testm_conf = OrderedDict()
-        for (test_idx,comp_type,score_type,check_type,timelimit,memlimit,
+        for (test_idx,comp_type,score_type,check_type,timelimit,memlimit,weight,
                 metadata) in cur:
             testm_conf[test_idx] = {
                 'comp_type':comp_type,
@@ -52,6 +52,7 @@ class ProService:
                 'check_type':check_type,
                 'timelimit':timelimit,
                 'memlimit':memlimit,
+                'weight':weight,
                 'metadata':json.loads(metadata,'utf-8')
             }
 
@@ -97,8 +98,32 @@ class ProService:
                 'name':name,
                 'status':status,
                 'expire':expire,
-                'state':state
+                'state':state,
+                'rate':2000
             })
+        
+        yield cur.execute(('SELECT "problem"."pro_id",'
+            'SUM("test_config"."weight") AS "weight",'
+            'SUM("test_valid_rate"."rate" * "test_config"."weight") AS "rate" '
+            'FROM "test_valid_rate" '
+            'INNER JOIN "test_config" '
+            'ON "test_valid_rate"."pro_id" = "test_config"."pro_id" '
+            'AND "test_valid_rate"."test_idx" = "test_config"."test_idx" '
+            'INNER JOIN "problem" '
+            'ON "test_valid_rate"."pro_id" = "problem"."pro_id" '
+            'WHERE "problem"."status" <= %s '
+            'GROUP BY "problem"."pro_id" '
+            'ORDER BY "pro_id" ASC;'),
+            (max_status,))
+
+        ratemap = {}
+        for pro_id,weight,rate in cur:
+            ratemap[pro_id] = math.floor((rate + (100 - weight) * 2000) / 100)
+
+        for pro in prolist:
+            pro_id = pro['pro_id']
+            if pro_id in ratemap:
+                pro['rate'] = ratemap[pro_id]
 
         return (None,prolist)
 
@@ -196,15 +221,15 @@ class ProService:
 
         for test_idx,test_conf in enumerate(conf['test']):
             metadata = {
-                'data':test_conf['data'],
-                'weight':test_conf['weight']
+                'data':test_conf['data']
             } 
             yield cur.execute(('INSERT INTO "test_config" '
                 '("pro_id","test_idx","compile_type","score_type","check_type",'
-                '"timelimit","memlimit","metadata") '
-                'VALUES (%s,%s,%s,%s,%s,%s,%s,%s);'),
+                '"timelimit","memlimit","weight","metadata") '
+                'VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s);'),
                 (pro_id,test_idx,comp_type,score_type,check_type,
-                    timelimit,memlimit,json.dumps(metadata)))
+                    timelimit,memlimit,test_conf['weight'],
+                    json.dumps(metadata)))
 
         return (None,None)
 
@@ -237,7 +262,7 @@ class ProHandler(RequestHandler):
                 'test_idx':test_idx,
                 'timelimit':test_conf['timelimit'],
                 'memlimit':test_conf['memlimit'],
-                'weight':test_conf['metadata']['weight'],
+                'weight':test_conf['weight'],
                 'rate':2000
             })
 
