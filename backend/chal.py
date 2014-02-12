@@ -157,7 +157,7 @@ class ChalService:
 
         return (None,None)
 
-    def list_chal(self,off,num,min_accttype = UserService.ACCTTYPE_MEMBER):
+    def list_chal(self,off,num,min_accttype = UserService.ACCTTYPE_USER):
         cur = yield self.db.cursor()
         yield cur.execute(('SELECT '
             '"challenge"."chal_id",'
@@ -202,7 +202,7 @@ class ChalService:
 
         return (None,challist)
 
-    def get_stat(self,min_accttype = UserService.ACCTTYPE_MEMBER):
+    def get_stat(self,min_accttype = UserService.ACCTTYPE_USER):
         cur = yield self.db.cursor()
         yield cur.execute(('SELECT COUNT(1) FROM "challenge" '
             'INNER JOIN "account" '

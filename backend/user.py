@@ -13,7 +13,6 @@ class UserService:
     NAME_MIN = 1
 
     ACCTTYPE_KERNEL = 0
-    ACCTTYPE_MEMBER = 2
     ACCTTYPE_USER = 3
 
     ACCTID_GUEST = 0
@@ -95,17 +94,17 @@ class UserService:
         acct = yield self.mc.get('account@%d'%acct_id)
         if acct == None:
             cur = yield self.db.cursor()
-            yield cur.execute(('SELECT "mail","name","acct_type" '
+            yield cur.execute(('SELECT "mail","name","acct_type","class" '
                 'FROM "account" WHERE "acct_id" = %s;'),
                 (acct_id,))
-
             if cur.rowcount != 1:
                 return ('Enoext',None)
 
-            mail,name,acct_type = cur.fetchone()
+            mail,name,acct_type,clas = cur.fetchone()
             acct = {
                 'acct_id':acct_id,
                 'acct_type':acct_type,
+                'class':clas[0],
                 'mail':mail,
                 'name':name
             }
@@ -115,5 +114,46 @@ class UserService:
         return (None,{
             'acct_id':acct['acct_id'],
             'acct_type':acct['acct_type'],
+            'class':acct['class'],
             'name':acct['name']
         })
+
+    def update_acct(self,acct_id,acct_type,clas,name):
+        if (acct_type not in
+                [UserService.ACCTTYPE_KERNEL,UserService.ACCTTYPE_USER]):
+            return ('Eparam',None)
+        if clas not in [0,1,2]:
+            return ('Eparam',None)
+        if len(name) < UserService.NAME_MIN:
+            return ('Enamemin',None)
+        if len(name) > UserService.NAME_MAX:
+            return ('Enamemax',None)
+
+        cur = yield self.db.cursor()
+        yield cur.execute(('UPDATE "account" '
+            'SET "acct_type" = %s,"class" = \'{%s}\',"name" = %s '
+            'WHERE "acct_id" = %s;'),
+            (acct_type,clas,name,acct_id))
+        if cur.rowcount != 1:
+            return ('Enoext',None)
+
+        yield self.mc.delete('account@%d'%acct_id)
+
+        return (None,None)
+
+    def list_acct(self):
+        cur = yield self.db.cursor()
+        yield cur.execute(('SELECT "acct_id","acct_type","name","mail","class" '
+            'FROM "account" ORDER BY "acct_id" ASC;'))
+
+        acctlist = []
+        for acct_id,acct_type,name,mail,clas in cur:
+            acctlist.append({
+                'acct_id':acct_id,
+                'acct_type':acct_type,
+                'name':name,
+                'mail':mail,
+                'class':clas[0]
+            })
+
+        return (None,acctlist)

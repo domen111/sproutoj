@@ -41,6 +41,20 @@ class ManageHandler(RequestHandler):
             self.render('manage-pro-update',page = page,pro = pro)
             return
 
+        elif page == 'acct':
+            err,acctlist = yield from UserService.inst.list_acct()
+
+            self.render('manage-acct',page = page,acctlist = acctlist)
+            return
+
+        elif page == 'updateacct':
+            acct_id = int(self.get_argument('acctid'))
+
+            err,acct = yield from UserService.inst.getinfo(acct_id)
+
+            self.render('manage-acct-update',page = page,acct = acct)
+            return
+
     @reqenv
     def post(self,page):
         if self.acct['acct_type'] != UserService.ACCTTYPE_KERNEL:
@@ -141,6 +155,28 @@ class ManageHandler(RequestHandler):
                             pro['testm_conf'],
                             os.path.abspath('code/%d/main.cpp'%chal_id),
                             os.path.abspath('problem/%d/res'%pro_id))
+
+                self.finish('S')
+                return
+
+        elif page == 'acct':
+            reqtype = self.get_argument('reqtype')
+
+            if reqtype == 'updateacct':
+                acct_id = int(self.get_argument('acct_id'))
+                acct_type = int(self.get_argument('acct_type'))
+                clas = int(self.get_argument('class'))
+
+                err,acct = yield from UserService.inst.getinfo(acct_id)
+                if err:
+                    self.finish(err)
+                    return
+
+                err,ret = yield from UserService.inst.update_acct(acct_id,
+                        acct_type,clas,acct['name'])
+                if err:
+                    self.finish(err)
+                    return
 
                 self.finish('S')
                 return

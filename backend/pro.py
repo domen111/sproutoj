@@ -371,9 +371,9 @@ class ChalListHandler(RequestHandler):
             off = 0
 
         err,chalstat = yield from ChalService.inst.get_stat(
-                min(self.acct['acct_type'],UserService.ACCTTYPE_MEMBER))
+                min(self.acct['acct_type'],UserService.ACCTTYPE_USER))
         err,challist = yield from ChalService.inst.list_chal(
-                off,20,min(self.acct['acct_type'],UserService.ACCTTYPE_MEMBER))
+                off,20,min(self.acct['acct_type'],UserService.ACCTTYPE_USER))
 
         self.render('challist',chalstat = chalstat,challist = challist)
         return

@@ -91,7 +91,7 @@
 	    <option value=1{% if pro['class'] == 1 %} selected{% end %}>Language</option>
 	    <option value=2{% if pro['class'] == 2 %} selected{% end %}>Algorithm</option>
 	</select>
-        <input type="text" class="expire" value="{% if pro['expire'] != None %}{{ pro['expire'].strftime('%Y/%m/%d %H:%M') }}{% end %}" placeholder="Deadline [Year / Month / Day Hour : Minute]">
+        <input type="text" class="expire" value="{% if pro['expire'] != None %}{{ pro['expire'].strftime('%Y/%m/%d %H:%M') }}{% end %}" placeholder="Expire [Year / Month / Day Hour : Minute]">
 	<input type="file" class="file">
 	<button class="btn-con submit">Update</button>
 	<button class="btn-def cancel">Cancel</button>
