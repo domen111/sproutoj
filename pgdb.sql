@@ -39,7 +39,7 @@ CREATE TABLE account (
     name character varying,
     password character varying,
     acct_type integer DEFAULT 3,
-    class integer[] DEFAULT '{}'::integer[]
+    class integer[] DEFAULT '{0}'::integer[]
 );
 
 
