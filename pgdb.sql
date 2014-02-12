@@ -112,7 +112,8 @@ CREATE TABLE test (
     state integer,
     runtime bigint DEFAULT 0,
     memory bigint DEFAULT 0,
-    acct_id integer
+    acct_id integer,
+    "timestamp" timestamp with time zone
 );
 
 
@@ -209,22 +210,23 @@ CREATE MATERIALIZED VIEW test_count AS
 ALTER TABLE public.test_count OWNER TO oj;
 
 --
--- Name: test_valid_count; Type: MATERIALIZED VIEW; Schema: public; Owner: admin; Tablespace: 
+-- Name: test_valid_rate; Type: MATERIALIZED VIEW; Schema: public; Owner: oj; Tablespace: 
 --
 
-CREATE MATERIALIZED VIEW test_valid_count AS
+CREATE MATERIALIZED VIEW test_valid_rate AS
  SELECT test.pro_id,
     test.test_idx,
-    test.state,
-    count(1) AS count
+    count(DISTINCT account.acct_id) AS count,
+    (((exp((((30 - count(DISTINCT account.acct_id)))::double precision / (9.86960440109)::double precision)) - (1)::double precision) * (83.88)::double precision) + (500)::double precision) AS rate
    FROM ((test
    JOIN account ON ((test.acct_id = account.acct_id)))
    JOIN problem ON (((test.pro_id = problem.pro_id) AND (account.class && problem.class))))
-  GROUP BY test.pro_id, test.test_idx, test.state
+  WHERE ((test.state = 1) AND (age(test."timestamp", problem.expire) < '7 days'::interval))
+  GROUP BY test.pro_id, test.test_idx
   WITH NO DATA;
 
 
-ALTER TABLE public.test_valid_count OWNER TO admin;
+ALTER TABLE public.test_valid_rate OWNER TO oj;
 
 --
 -- Name: acct_id; Type: DEFAULT; Schema: public; Owner: oj

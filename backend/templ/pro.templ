@@ -109,18 +109,19 @@
 	<thead>
 	    <tr>
 		<th>Test</th>
-		<th>Solved</th>
+		<th>Rate</th>
 	    </tr>
 	</thead>
 	<tbody>
         {% for test in testl %}
 	    <tr>
                 <td>{{ '%04d'%(test['test_idx'] + 1) }}</td>
-                <td>{{ test['solved'] }}</td>
+                <td>{{ test['rate'] }}</td>
 	    </tr>
         {% end %}
 	</tbody>
     </table>
+
 </div>
 <div id="cont" class="g-lg-10">
     <strong>Loading...</strong>

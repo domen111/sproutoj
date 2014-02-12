@@ -1,5 +1,6 @@
 import os
 import json
+import math
 import tornado.process
 import tornado.concurrent
 import tornado.web
@@ -237,14 +238,14 @@ class ProHandler(RequestHandler):
                 'timelimit':test_conf['timelimit'],
                 'memlimit':test_conf['memlimit'],
                 'weight':test_conf['metadata']['weight'],
-                'solved':0
+                'rate':2000
             })
 
         cur = yield self.db.cursor()
-        yield cur.execute(('SELECT "test_idx","count" FROM "test_count" '
-            'WHERE "pro_id" = %s AND "state" = %s AND "acct_type" = %s '
-            'ORDER BY "test_idx" ASC;'),
-            (pro_id,ChalService.STATE_AC,UserService.ACCTTYPE_MEMBER))
+
+        yield cur.execute(('SELECT "test_idx","rate" FROM "test_valid_rate" '
+            'WHERE "pro_id" = %s ORDER BY "test_idx" ASC;'),
+            (pro_id,))
         
         countmap = {}
         for test_idx,count in cur:
@@ -252,7 +253,7 @@ class ProHandler(RequestHandler):
 
         for test in testl:
             if test['test_idx'] in countmap:
-                test['solved'] = countmap[test['test_idx']]
+                test['rate'] = math.floor(countmap[test['test_idx']])
 
         self.render('pro',pro = {
             'pro_id':pro['pro_id'],

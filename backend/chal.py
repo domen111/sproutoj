@@ -60,7 +60,7 @@ class ChalService:
                 (chal_id,))
 
         cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
-        cur.execute('REFRESH MATERIALIZED VIEW test_count;')
+        cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
 
         return (None,None)
 
@@ -118,13 +118,13 @@ class ChalService:
     def emit_chal(self,chal_id,pro_id,testm_conf,code_path,res_path):
         cur = yield self.db.cursor()
 
-        yield cur.execute(('SELECT "acct_id" FROM "challenge" '
+        yield cur.execute(('SELECT "acct_id","timestamp" FROM "challenge" '
             'WHERE "chal_id" = %s;'),
             (chal_id,))
         if cur.rowcount != 1:
             return ('Enoext',None)
 
-        acct_id = cur.fetchone()[0]
+        acct_id,timestamp = cur.fetchone()
 
         testl = list()
         for test_idx,test_conf in testm_conf.items():
@@ -138,12 +138,12 @@ class ChalService:
             })
 
             yield cur.execute(('INSERT INTO "test" '
-                '("chal_id","acct_id","pro_id","test_idx","state") '
-                'VALUES (%s,%s,%s,%s,%s);'),
-                (chal_id,acct_id,pro_id,test_idx,ChalService.STATE_JUDGE))
+                '("chal_id","acct_id","pro_id","test_idx","state","timestamp") '
+                'VALUES (%s,%s,%s,%s,%s,%s);'),
+                (chal_id,acct_id,pro_id,test_idx,
+                    ChalService.STATE_JUDGE,timestamp))
 
         cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
-        cur.execute('REFRESH MATERIALIZED VIEW test_count;')
 
         if self.ws == None:
             self.ws = yield websocket_connect('ws://localhost:2501/judge')
@@ -230,7 +230,9 @@ class ChalService:
             return ('Enoext',None)
 
         cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
-        cur.execute('REFRESH MATERIALIZED VIEW test_count;')
+
+        if state == ChalService.STATE_AC:
+            cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
 
         return (None,None)
 
