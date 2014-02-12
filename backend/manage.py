@@ -61,6 +61,7 @@ class ManageHandler(RequestHandler):
             if reqtype == 'addpro':
                 name = self.get_argument('name')
                 status = int(self.get_argument('status'))
+                clas = int(self.get_argument('class'))
                 expire = self.get_argument('expire')
                 pack_token = self.get_argument('pack_token')
                 
@@ -78,7 +79,7 @@ class ManageHandler(RequestHandler):
                         return
 
                 err,pro_id = yield from ProService.inst.add_pro(
-                        name,status,expire,pack_token)
+                        name,status,clas,expire,pack_token)
                 if err:
                     self.finish(err)
                     return
@@ -90,6 +91,7 @@ class ManageHandler(RequestHandler):
                 pro_id = int(self.get_argument('pro_id'))
                 name = self.get_argument('name')
                 status = int(self.get_argument('status'))
+                clas = int(self.get_argument('class'))
                 expire = self.get_argument('expire')
                 pack_token = self.get_argument('pack_token')
 
@@ -102,8 +104,7 @@ class ManageHandler(RequestHandler):
                                 '%Y-%m-%dT%H:%M:%S.%fZ')
                         expire = expire.replace(tzinfo = datetime.timezone.utc)
 
-                    except ValueError as e:
-                        print(e)
+                    except ValueError:
                         self.finish('Eexpire')
                         return
 
@@ -111,7 +112,7 @@ class ManageHandler(RequestHandler):
                     pack_token = None
 
                 err,ret = yield from ProService.inst.update_pro(
-                        pro_id,name,status,expire,pack_token)
+                        pro_id,name,status,clas,expire,pack_token)
                 if err:
                     self.finish(err)
                     return

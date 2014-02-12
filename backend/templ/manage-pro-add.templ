@@ -10,6 +10,7 @@
 	j_form.find('button.submit').on('click',function(e){
 	    var name = j_form.find('input.name').val();
 	    var status = j_form.find('select.status').val();
+            var clas = j_form.find('select.class').val();
             var expire = j_form.find('input.expire').val();
 	    var files = j_form.find('input.file')[0].files;
             
@@ -33,6 +34,7 @@
                         'reqtype':'addpro',
                         'name':name,
                         'status':status,
+                        'class':clas,
                         'expire':expire,
                         'pack_token':pack_token
                     },function(res){
@@ -73,6 +75,10 @@
 	    <option value=0>Online</option>
 	    <option value=1>Hidden</option>
 	    <option value=2>Offline</option>
+	</select>
+        <select class="class">
+	    <option value=1>Language</option>
+	    <option value=2>Algorithm</option>
 	</select>
         <input type="text" class="expire" placeholder="Deadline [Year / Month / Day Hour : Minute]">
 	<input type="file" class="file">

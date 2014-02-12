@@ -29,14 +29,15 @@ class ProService:
         max_status = self._get_acct_limit(acct)
 
         cur = yield self.db.cursor()
-        yield cur.execute(('SELECT "name","status","expire" FROM "problem" '
-            'WHERE "pro_id" = %s AND "status" <= %s;'),
+        yield cur.execute(('SELECT "name","status","expire","class" '
+            'FROM "problem" WHERE "pro_id" = %s AND "status" <= %s;'),
             (pro_id,max_status))
 
         if cur.rowcount != 1:
             return ('Enoext',None)
 
-        name,status,expire = cur.fetchone()
+        name,status,expire,clas = cur.fetchone()
+        clas = clas[0]
 
         yield cur.execute(('SELECT "test_idx","compile_type","score_type",'
             '"check_type","timelimit","memlimit","weight","metadata" '
@@ -61,6 +62,7 @@ class ProService:
             'name':name,
             'status':status,
             'expire':expire,
+            'class':clas,
             'testm_conf':testm_conf
         })
 
@@ -128,13 +130,14 @@ class ProService:
         return (None,prolist)
 
     def add_pro(self,name,status,expire,pack_token = None):
-        size = len(name)
-        if size < ProService.NAME_MIN:
+        if len(name) < ProService.NAME_MIN:
             return ('Enamemin',None)
-        if size > ProService.NAME_MAX:
+        if len(name) > ProService.NAME_MAX:
             return ('Enamemax',None)
         if (status < ProService.STATUS_ONLINE or
                 status > ProService.STATUS_OFFLINE):
+            return ('Eparam',None)
+        if clas not in [1,2]:
             return ('Eparam',None)
 
         cur = yield self.db.cursor()
@@ -155,7 +158,7 @@ class ProService:
 
         return (None,pro_id)
 
-    def update_pro(self,pro_id,name,status,expire,pack_token = None):
+    def update_pro(self,pro_id,name,status,clas,expire,pack_token = None):
         if len(name) < ProService.NAME_MIN:
             return ('Enamemin',None)
         if len(name) > ProService.NAME_MAX:
@@ -163,12 +166,14 @@ class ProService:
         if (status < ProService.STATUS_ONLINE or
                 status > ProService.STATUS_OFFLINE):
             return ('Eparam',None)
+        if clas not in [1,2]:
+            return ('Eparam',None)
 
         cur = yield self.db.cursor()
         yield cur.execute(('UPDATE "problem" '
-            'SET "name" = %s,"status" = %s,"expire" = %s '
+            'SET "name" = %s,"status" = %s,"class" = \'{%s}\',"expire" = %s '
             'WHERE "pro_id" = %s;'),
-            (name,status,expire,pro_id))
+            (name,status,clas,expire,pro_id))
 
         if cur.rowcount != 1:
             return ('Enoext',None)
