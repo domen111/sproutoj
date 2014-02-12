@@ -118,6 +118,14 @@ class ChalService:
     def emit_chal(self,chal_id,pro_id,testm_conf,code_path,res_path):
         cur = yield self.db.cursor()
 
+        yield cur.execute(('SELECT "acct_id" FROM "challenge" '
+            'WHERE "chal_id" = %s;'),
+            (chal_id,))
+        if cur.rowcount != 1:
+            return ('Enoext',None)
+
+        acct_id = cur.fetchone()[0]
+
         testl = list()
         for test_idx,test_conf in testm_conf.items():
             testl.append({
@@ -130,9 +138,9 @@ class ChalService:
             })
 
             yield cur.execute(('INSERT INTO "test" '
-                '("chal_id","pro_id","test_idx","state") '
-                'VALUES (%s,%s,%s,%s);'),
-                (chal_id,pro_id,test_idx,ChalService.STATE_JUDGE))
+                '("chal_id","acct_id","pro_id","test_idx","state") '
+                'VALUES (%s,%s,%s,%s,%s);'),
+                (chal_id,acct_id,pro_id,test_idx,ChalService.STATE_JUDGE))
 
         cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
         cur.execute('REFRESH MATERIALIZED VIEW test_count;')

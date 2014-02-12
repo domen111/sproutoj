@@ -39,7 +39,7 @@
     <div class="g-r item">
         <div class="g-sm-1 id">{{ pro['pro_id'] }}</div>
         {% if pro['state'] == None %}
-            <div class="g-sm-3 light">Undo</div>
+            <div class="g-sm-3 light">Todo</div>
         {% else %}
             <div class="g-sm-3 state-{{ pro['state'] }}">{{ ChalService.STATE_STR[pro['state']] }}</div>
         {% end %}
