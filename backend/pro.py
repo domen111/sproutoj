@@ -66,14 +66,22 @@ class ProService:
             'testm_conf':testm_conf
         })
 
-    def list_pro(self,acct,state = False):
+    def list_pro(self,acct,state = False,cls = None):
         cur = yield self.db.cursor()
 
         max_status = self._get_acct_limit(acct)
+
+        if cls == None:
+            cls = [1,2]
+
+        else:
+            cls = [cls]
+
         if state == False:
             yield cur.execute(('SELECT "pro_id","name","status","expire",NULL '
-                'FROM "problem" WHERE "status" <= %s ORDER BY "pro_id" ASC;'),
-                (max_status,))
+                'FROM "problem" WHERE "status" <= %s AND "class" && %s '
+                'ORDER BY "pro_id" ASC;'),
+                (max_status,cls))
 
         else:
             yield cur.execute(('SELECT '
@@ -88,10 +96,10 @@ class ProService:
                 'AND "challenge"."acct_id" = %s '
                 'RIGHT JOIN "problem" '
                 'ON "challenge"."pro_id" = "problem"."pro_id" '
-                'WHERE "problem"."status" <= %s '
+                'WHERE "problem"."status" <= %s AND "problem"."class" && %s '
                 'GROUP BY "problem"."pro_id" '
                 'ORDER BY "pro_id" ASC;'),
-                (acct['acct_id'],max_status))
+                (acct['acct_id'],max_status,cls))
 
         prolist = list()
         for pro_id,name,status,expire,state in cur:
@@ -241,10 +249,16 @@ class ProService:
 class ProsetHandler(RequestHandler):
     @reqenv
     def get(self):
-        err,prolist = yield from ProService.inst.list_pro(
-                self.acct,state = True)
+        try:
+            cls = int(self.get_argument('class'))
 
-        self.render('proset',prolist = prolist)
+        except tornado.web.HTTPError:
+            cls = None
+
+        err,prolist = yield from ProService.inst.list_pro(
+                self.acct,state = True,cls = cls)
+
+        self.render('proset',prolist = prolist,cls = cls)
         return
 
     @reqenv

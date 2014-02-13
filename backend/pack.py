@@ -82,7 +82,7 @@ class PackService():
                 if code != 0:
                     callback(('Eunk',None))
 
-                #os.remove('tmp/%s.tar.xz'%pack_token)
+                os.remove('tmp/%s.tar.xz'%pack_token)
 
                 sub = tornado.process.Subprocess(
                         ['/bin/bash','newline.sh','%s/res/testdata'%dst])

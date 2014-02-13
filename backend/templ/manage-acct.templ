@@ -23,7 +23,7 @@
     {% for acct in acctlist %}
         <tr>
             <td>{{ acct['acct_id'] }}</td>
-            <td>{{ acct['name'] }}</td>
+            <td><a href="/oj/acct/{{ acct['acct_id'] }}/">{{ acct['name'] }}</a></td>
             <td>{{ acct['mail'] }}</td>
             <td>
             {% if acct['acct_type'] == 0 %}

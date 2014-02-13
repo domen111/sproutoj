@@ -139,6 +139,8 @@ class UserService:
 
         yield self.mc.delete('account@%d'%acct_id)
 
+        cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
+
         return (None,None)
 
     def list_acct(self):
