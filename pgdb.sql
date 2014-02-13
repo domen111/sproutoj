@@ -218,7 +218,7 @@ CREATE MATERIALIZED VIEW test_valid_rate AS
  SELECT test.pro_id,
     test.test_idx,
     count(DISTINCT account.acct_id) AS count,
-    (((exp((((30 - count(DISTINCT account.acct_id)))::double precision / (9.86960440109)::double precision)) - (1)::double precision) * (83.88)::double precision) + (500)::double precision) AS rate
+    (power((4096)::double precision, ((1)::double precision / ((count(DISTINCT account.acct_id) + 5))::double precision)) * (500)::double precision) AS rate
    FROM ((test
    JOIN account ON ((test.acct_id = account.acct_id)))
    JOIN problem ON (((test.pro_id = problem.pro_id) AND (account.class && problem.class))))
