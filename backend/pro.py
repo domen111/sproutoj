@@ -66,22 +66,22 @@ class ProService:
             'testm_conf':testm_conf
         })
 
-    def list_pro(self,acct,state = False,cls = None):
+    def list_pro(self,acct,state = False,clas = None):
         cur = yield self.db.cursor()
 
         max_status = self._get_acct_limit(acct)
 
-        if cls == None:
-            cls = [1,2]
+        if clas == None:
+            clas = [1,2]
 
         else:
-            cls = [cls]
+            clas = [clas]
 
         if state == False:
             yield cur.execute(('SELECT "pro_id","name","status","expire",NULL '
                 'FROM "problem" WHERE "status" <= %s AND "class" && %s '
                 'ORDER BY "pro_id" ASC;'),
-                (max_status,cls))
+                (max_status,clas))
 
         else:
             yield cur.execute(('SELECT '
@@ -99,7 +99,7 @@ class ProService:
                 'WHERE "problem"."status" <= %s AND "problem"."class" && %s '
                 'GROUP BY "problem"."pro_id" '
                 'ORDER BY "pro_id" ASC;'),
-                (acct['acct_id'],max_status,cls))
+                (acct['acct_id'],max_status,clas))
 
         prolist = list()
         for pro_id,name,status,expire,state in cur:
@@ -137,7 +137,7 @@ class ProService:
 
         return (None,prolist)
 
-    def add_pro(self,name,status,expire,pack_token = None):
+    def add_pro(self,name,status,clas,expire,pack_token = None):
         if len(name) < ProService.NAME_MIN:
             return ('Enamemin',None)
         if len(name) > ProService.NAME_MAX:
@@ -150,9 +150,9 @@ class ProService:
 
         cur = yield self.db.cursor()
         yield cur.execute(('INSERT INTO "problem" '
-            '("name","status","expire") '
-            'VALUES (%s,%s,%s) RETURNING "pro_id";'),
-            (name,status,expire))
+            '("name","status","class","expire") '
+            'VALUES (%s,%s,%s,%s) RETURNING "pro_id";'),
+            (name,status,[clas],expire))
 
         if cur.rowcount != 1:
             return ('Eunk',None)
@@ -179,9 +179,9 @@ class ProService:
 
         cur = yield self.db.cursor()
         yield cur.execute(('UPDATE "problem" '
-            'SET "name" = %s,"status" = %s,"class" = \'{%s}\',"expire" = %s '
+            'SET "name" = %s,"status" = %s,"class" = %s,"expire" = %s '
             'WHERE "pro_id" = %s;'),
-            (name,status,clas,expire,pro_id))
+            (name,status,[clas],expire,pro_id))
 
         if cur.rowcount != 1:
             return ('Enoext',None)
@@ -250,15 +250,15 @@ class ProsetHandler(RequestHandler):
     @reqenv
     def get(self):
         try:
-            cls = int(self.get_argument('class'))
+            clas = int(self.get_argument('class'))
 
         except tornado.web.HTTPError:
-            cls = None
+            clas = None
 
         err,prolist = yield from ProService.inst.list_pro(
-                self.acct,state = True,cls = cls)
+                self.acct,state = True,clas = clas)
 
-        self.render('proset',prolist = prolist,cls = cls)
+        self.render('proset',prolist = prolist,clas = clas)
         return
 
     @reqenv
