@@ -75,7 +75,6 @@ var index = new function(){
             j_cont.html(res).ready(function(){
                 var defer;
 
-                MathJax.Hub.Queue(["Typeset",MathJax.Hub,j_cont[0]]);
                 $('pre > code').each(function(i,e){hljs.highlightBlock(e)});
 
                 if(typeof(init) == 'function'){

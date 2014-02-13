@@ -9,6 +9,7 @@
                 if(status == 'error'){
                     _load_pdf();
                 }else{
+                    MathJax.Hub.Queue(["Typeset",MathJax.Hub,j_cont[0]]);
 		    j_cont.find('pre > code').each(function(i,e){
                         hljs.highlightBlock(e)
                     });
