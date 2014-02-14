@@ -129,15 +129,54 @@ class AcctHandler(RequestHandler):
         if cur.rowcount != 1:
             self.finish('Unknown')
             return
-        
+
         rate = cur.fetchone()[0]
         if rate == None:
             rate = 0
         
         else:
-            rate = math.floor(rate / 100)
+            rate = rate / 100
 
-        self.render('acct',acct = acct,rate = rate)
+        yield cur.execute(('SELECT '
+            '"pro_rank"."pro_id",'
+            '(0.3 * power(0.66,("pro_rank"."rank" - 1))) AS "weight" FROM ('
+            '    SELECT '
+            '    "challenge"."pro_id","challenge"."acct_id",'
+            '    row_number() OVER ('
+            '        PARTITION BY "challenge"."pro_id" ORDER BY MIN('
+            '        "challenge"."chal_id") ASC) AS "rank" '
+            '    FROM "challenge" '
+            '    INNER JOIN ('
+            '        SELECT "pro_id" FROM "challenge" '
+            '        WHERE "challenge"."acct_id" = %s'
+            '    ) AS need_id ON "challenge"."pro_id" = "need_id"."pro_id" '
+            '    INNER JOIN "challenge_state" '
+            '    ON "challenge"."chal_id" = "challenge_state"."chal_id" '
+            '    INNER JOIN "problem" ON '
+            '    "challenge"."pro_id" = "problem"."pro_id" '
+            '    INNER JOIN "account" '
+            '    ON "challenge"."acct_id" = "account"."acct_id" '
+            '    WHERE "challenge_state"."state" = %s '
+            '    AND "problem"."class" && "account"."class" '
+            '    GROUP BY "challenge"."pro_id","challenge"."acct_id"'
+            ') AS "pro_rank" WHERE "pro_rank"."acct_id" = %s;'),
+            (acct['acct_id'],ChalService.STATE_AC,acct['acct_id']))
+
+        weightmap = {}
+        for pro_id,weight in cur:
+            weightmap[pro_id] = float(weight)
+
+        err,prolist = yield from ProService.inst.list_pro(acct)
+        if err:
+            self.finish(err)
+            return
+
+        for pro in prolist:
+            pro_id = pro['pro_id']
+            if pro_id in weightmap:
+                rate += pro['rate'] * weightmap[pro_id]
+
+        self.render('acct',acct = acct,rate = math.floor(rate))
         return
 
     @reqenv

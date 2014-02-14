@@ -286,6 +286,10 @@ class ProHandler(RequestHandler):
         if err:
             self.finish(err)
             return
+        
+        if pro['status'] == ProService.STATUS_OFFLINE:
+            self.finish('Eacces')
+            return
 
         testl = list()
         for test_idx,test_conf in pro['testm_conf'].items():
@@ -330,6 +334,10 @@ class SubmitHandler(RequestHandler):
         if err:
             self.finish(err)
             return
+        
+        if pro['status'] == ProService.STATUS_OFFLINE:
+            self.finish('Eacces')
+            return
 
         self.render('submit',pro = pro)
         return
@@ -348,6 +356,10 @@ class SubmitHandler(RequestHandler):
             err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
             if err:
                 self.finish(err)
+                return
+
+            if pro['status'] == ProService.STATUS_OFFLINE:
+                self.finish('Eacces')
                 return
 
             err,chal_id = yield from ChalService.inst.add_chal(
