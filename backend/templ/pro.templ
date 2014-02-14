@@ -117,7 +117,7 @@
         {% for test in testl %}
 	    <tr>
                 <td>{{ '%04d'%(test['test_idx'] + 1) }}</td>
-                <td>{{ test['rate'] }}</td>
+                <td>{{ '%.1f'%(test['rate'] * test['weight'] / 100) }}</td>
 	    </tr>
         {% end %}
 	</tbody>

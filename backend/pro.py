@@ -39,7 +39,7 @@ class ProService:
 
         name,status,clas,expire = cur.fetchone()
         clas = clas[0]
-        if expire == datetime.date.max:
+        if expire == datetime.datetime.max:
             expire = None
 
         yield cur.execute(('SELECT "test_idx","compile_type","score_type",'
