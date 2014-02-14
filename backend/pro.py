@@ -1,6 +1,7 @@
 import os
 import json
 import math
+import datetime
 import tornado.process
 import tornado.concurrent
 import tornado.web
@@ -29,15 +30,17 @@ class ProService:
         max_status = self._get_acct_limit(acct)
 
         cur = yield self.db.cursor()
-        yield cur.execute(('SELECT "name","status","expire","class" '
+        yield cur.execute(('SELECT "name","status","class","expire" '
             'FROM "problem" WHERE "pro_id" = %s AND "status" <= %s;'),
             (pro_id,max_status))
 
         if cur.rowcount != 1:
             return ('Enoext',None)
 
-        name,status,expire,clas = cur.fetchone()
+        name,status,clas,expire = cur.fetchone()
         clas = clas[0]
+        if expire == datetime.date.max:
+            expire = None
 
         yield cur.execute(('SELECT "test_idx","compile_type","score_type",'
             '"check_type","timelimit","memlimit","weight","metadata" '
@@ -103,6 +106,9 @@ class ProService:
 
         prolist = list()
         for pro_id,name,status,expire,state in cur:
+            if expire == datetime.datetime.max:
+                expire = None
+
             prolist.append({
                 'pro_id':pro_id,
                 'name':name,
@@ -148,6 +154,9 @@ class ProService:
         if clas not in [1,2]:
             return ('Eparam',None)
 
+        if expire == None:
+            expire = datetime.datetime.max
+
         cur = yield self.db.cursor()
         yield cur.execute(('INSERT INTO "problem" '
             '("name","status","class","expire") '
@@ -176,6 +185,9 @@ class ProService:
             return ('Eparam',None)
         if clas not in [1,2]:
             return ('Eparam',None)
+
+        if expire == None:
+            expire = datetime.datetime.max
 
         cur = yield self.db.cursor()
         yield cur.execute(('UPDATE "problem" '

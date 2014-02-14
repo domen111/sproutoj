@@ -25,14 +25,16 @@
 </script>
 {% end %}
 {% block content %}
-    <div class="print"></div>
     <table id="prolist">
 	<thead>
 	    <tr>
 		<th>#</th>
 		<th>Problem Name</th>
 		<th>Status</th>
-                <th><a class="btn btn-pri" href="/oj/manage/addpro/">&#x271a</a></th>
+                <th>
+		    <a class="btn btn-pri" href="/oj/manage/addpro/">&#x271a</a>
+		    <div class="print"></div>
+		</th>
 	    </tr>
 	</thead>
 	<tbody>
