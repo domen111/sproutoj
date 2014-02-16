@@ -157,7 +157,11 @@ class ChalService:
 
         return (None,None)
 
-    def list_chal(self,off,num,min_accttype = UserService.ACCTTYPE_USER):
+    def list_chal(self,off,num,min_accttype = UserService.ACCTTYPE_USER,
+            flt = {'pro_id':None,'acct_id':None}):
+
+        fltquery,fltarg = self._get_fltquery(flt)
+
         cur = yield self.db.cursor()
         yield cur.execute(('SELECT '
             '"challenge"."chal_id",'
@@ -173,9 +177,9 @@ class ChalService:
             'ON "challenge"."acct_id" = "account"."acct_id" '
             'LEFT JOIN "challenge_state" '
             'ON "challenge"."chal_id" = "challenge_state"."chal_id" '
-            'WHERE "account"."acct_type" >= %s '
+            'WHERE "account"."acct_type" >= %s' +  fltquery +
             'ORDER BY "challenge"."timestamp" DESC OFFSET %s LIMIT %s;'),
-            (min_accttype,off,num))
+            [min_accttype] + fltarg + [off,num])
         
         challist = list()
         for (chal_id,pro_id,acct_id,timestamp,acct_name,
@@ -202,13 +206,15 @@ class ChalService:
 
         return (None,challist)
 
-    def get_stat(self,min_accttype = UserService.ACCTTYPE_USER):
+    def get_stat(self,min_accttype = UserService.ACCTTYPE_USER,flt = None):
+        fltquery,fltarg = self._get_fltquery(flt)
+
         cur = yield self.db.cursor()
         yield cur.execute(('SELECT COUNT(1) FROM "challenge" '
             'INNER JOIN "account" '
             'ON "challenge"."acct_id" = "account"."acct_id" '
-            'WHERE "account"."acct_type" >= %s;'),
-            (min_accttype,))
+            'WHERE "account"."acct_type" >= %s' + fltquery + ';'),
+            [min_accttype] + fltarg)
 
         if cur.rowcount != 1:
             return ('Eunk',None)
@@ -235,6 +241,19 @@ class ChalService:
             cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
 
         return (None,None)
+
+    def _get_fltquery(self,flt):
+        query = ' '
+        arg = []
+        if flt['pro_id'] != None:
+            query += 'AND "challenge"."pro_id" = %s '
+            arg.append(flt['pro_id'])
+
+        if flt['acct_id'] != None:
+            query += 'AND "challenge"."acct_id" = %s '
+            arg.append(flt['acct_id'])
+
+        return (query,arg)
 
     @coroutine
     def _collect_judge(self):

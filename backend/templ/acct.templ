@@ -5,7 +5,29 @@
     }
 </script>
 
-<div class="g-lg-4">
+<div class="g-lg-3">
     <h1>{{ acct['name'] }}</h1>
-    <h3>Rate: {{ rate }}</h3>
+    <h3>Total Rate: {{ rate + extrate + bonus }}</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Key</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Original Rate</td>
+                <td>{{ rate }}</td>
+            </tr>
+            <tr>
+                <td>Extend Rate</td>
+                <td>{{ extrate }}</td>
+            </tr>
+            <tr>
+                <td>Bonus</td>
+                <td>+{{ bonus }}</td>
+            </tr>
+        </tbody>
+    </table>
 </div>

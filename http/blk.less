@@ -186,6 +186,7 @@ label{
     font-size:@fs-md;
 }
 input{
+    width:100%;
     padding:((36px - @fs-md) / 2 - 3) 8px ((36px - @fs-md) / 2 - 2) 8px;
     border:@gray 1px solid;
     border-radius:2px;
@@ -410,7 +411,22 @@ ul.pagin{
         display:inline-block;
 
         & > a{
-            text-decoration:none;
+            color:@gray;
+
+            &:hover{
+		color:@darkgray;
+		text-decoration:none;
+	    }
+        }
+        &.active > a{
+	    color:#DB4D6D;
+        }
+
+        &:hover{
+            border-top:solid 1px @darkgray;
+        }
+        &.active{
+            border-top:solid 1px #DB4D6D;
         }
     }
 }

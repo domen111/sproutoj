@@ -137,6 +137,39 @@ class AcctHandler(RequestHandler):
         else:
             rate = rate / 100
 
+        extrate = 0
+        if acct['class'] == 0:
+            cur = yield self.db.cursor()
+            yield cur.execute('SELECT '
+                    'SUM("test_valid_rate"."rate" * "test_config"."weight") '
+                    'AS "rate" FROM "test_valid_rate" '
+                    'INNER JOIN ('
+                    '    SELECT "test"."pro_id","test"."test_idx" '
+                    '    FROM "test" '
+                    '    INNER JOIN "problem" '
+                    '    ON "test"."pro_id" = "problem"."pro_id" '
+                    '    WHERE "test"."acct_id" = %s '
+                    '    AND "test"."state" = %s '
+                    '    AND %s && "problem"."class" '
+                    '    GROUP BY "test"."pro_id","test"."test_idx"'
+                    ') AS "valid_test" '
+                    'ON "test_valid_rate"."pro_id" = "valid_test"."pro_id" '
+                    'AND "test_valid_rate"."test_idx" = "valid_test"."test_idx" '
+                    'INNER JOIN "test_config" '
+                    'ON "test_valid_rate"."pro_id" = "test_config"."pro_id" '
+                    'AND "test_valid_rate"."test_idx" = "test_config"."test_idx";',
+                    (acct_id,ChalService.STATE_AC,[2]))
+            if cur.rowcount != 1:
+                self.finish('Unknown')
+                return
+
+            extrate = cur.fetchone()[0]
+            if extrate == None:
+                extrate = 0
+
+            else:
+                extrate = extrate / 100
+
         yield cur.execute(('SELECT '
             '"pro_rank"."pro_id",'
             '(0.3 * power(0.66,("pro_rank"."rank" - 1))) AS "weight" FROM ('
@@ -171,12 +204,16 @@ class AcctHandler(RequestHandler):
             self.finish(err)
             return
 
+        bonus = 0
         for pro in prolist:
             pro_id = pro['pro_id']
             if pro_id in weightmap:
-                rate += pro['rate'] * weightmap[pro_id]
+                bonus += pro['rate'] * weightmap[pro_id]
 
-        self.render('acct',acct = acct,rate = math.floor(rate))
+        self.render('acct',acct = acct,
+                rate = math.floor(rate),
+                extrate = math.floor(extrate),
+                bonus = math.floor(bonus))
         return
 
     @reqenv

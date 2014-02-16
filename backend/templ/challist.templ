@@ -1,13 +1,53 @@
+{% import math %}
 {% from chal import ChalService %}
 
 <link rel="stylesheet" type="text/css" href="/oj/challist.css">
 
 <script type="text/javascript">
     function init(){
+        var j_filter = $('#filter');
+
+        j_filter.find('button.submit').on('click',function(e){
+            var proid = j_filter.find('input.proid').val();
+            var acctid = j_filter.find('input.acctid').val();
+            var url = '/oj/chal/';
+
+            if(proid != ''){
+                url += '?proid=' + proid;
+                if(acctid != ''){
+                    url += '&acctid=' + acctid;
+                }
+            }else if(acctid != ''){
+                url += '?acctid=' + acctid;
+            }
+
+            index.go(url);
+        });
     }
 </script>
 
-<div class="g-lg-12">
+<div class="g-lg-2">
+    <table id="filter">
+        <thead>
+            <tr>
+                <th>Filter</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan=2><input class="proid" type="text" value="{% if flt['pro_id'] != None %}{{ flt['pro_id'] }}{% end %}" placeholder="proid"></td>
+            </tr>
+            <tr>
+                <td colspan=2><input class="acctid" type="text" value="{% if flt['acct_id'] != None %}{{ flt['acct_id'] }}{% end %}" placeholder="acctid"></td>
+            </tr>
+            <tr><td colspan=2>
+                <button class="btn-con btn-sm submit">適用する</button>
+            </td></tr>
+        </tbody>
+    </table>
+</div>
+<div class="g-lg-10">
     <table id="challist">
         <thead>
             <tr>
@@ -35,8 +75,22 @@
         </tbody>
     </table>
     <ul class="pagin">
-    {% for i,off in enumerate(range(0,chalstat['total_chal'],20)) %}
-        <li><a href="?off={{ off }}">{{ i + 1 }}</a></li>
+
+    {% set postfix = '' %}
+    {% if flt['pro_id'] != None %}
+    {%     set postfix = postfix + '&proid=%s'%flt['pro_id'] %}
+    {% end %}
+    {% if flt['acct_id'] != None %}
+    {%     set postfix = postfix + '&acctid=%s'%flt['acct_id'] %}
+    {% end %}
+
+        <li><a href="?off=0{{ postfix }}">&#x21e4;</a></li>
+    {% set ct = math.floor(pageoff / 20) %}
+    {% set st = min(max(0,ct - 9),
+        max(0,math.ceil(chalstat['total_chal'] / 20) - 19))%}
+    {% for i,off in enumerate(range(st * 20,
+        min(chalstat['total_chal'],st * 20 + 380),20)) %}
+        <li{% if ct == (i + st) %} class="active"{% end %}><a href="?off={{ str(off) + postfix }}">{{ i + 1 + st }}</a></li>
     {% end %}
     </ul>
 </div>

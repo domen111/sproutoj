@@ -2,6 +2,31 @@
 
 <script id="signjs" type="text/javascript">
     function init(){
+        $('body').addClass('dark');
+
+        $('#warning button.confirm').on('click',function(e){
+            $('body').addClass('dark');
+            $('#intro').show();     
+            $('#signin').hide();     
+            $('#signup').show();     
+            $('#sign').show();     
+            $('#warning').hide();
+        });
+        $('#warning button.cancel').on('click',function(e){
+            $('body').addClass('dark');
+            $('#intro').show();     
+            $('#sign').show();     
+            $('#warning').hide();
+        });
+
+        $('#signin button.signup').on('click',function(e){
+            $('#intro').hide();     
+            $('#sign').hide();     
+
+            $('body').removeClass('dark');
+            $('#warning').show();
+        });
+
         $('#signin > button.submit').on('click',function(e){
             var j_signin = $('#signin');
             var mail = j_signin.find('input.mail').val();
@@ -30,7 +55,7 @@
             var repeat = j_signup.find('input.repeat').val();
 
 	    if(pw != repeat){
-		$($.find('#signup div.print')[0]).print('Repeat incorrect');
+		$('#signup div.print').print('Repeat incorrect');
 		return;
 	    }
 	    
@@ -59,7 +84,7 @@
 			msg = 'Name length > max';
 		    }
 
-		    $.find('#signup div.print').print(msg);
+		    $('#signup div.print').print(msg);
                 }else{
 		    $($.find('#signup div.print')[0]).print(
 			    'Success, reloading...',true);
@@ -67,32 +92,43 @@
 		    location.href = '/oj/info/';
                 }
             });
-   
         });
-
+        $('#signup button.cancel').on('click',function(e){
+            index.reload();
+        });
     }
 </script>
 
-<div id="intro" class="g-lg-6">
-    <h1>Test Online Judge</h1>
-</div>
-<div id="sign" class="g-lg-4">
-    <div id="signin" class="blk-cont">
+<div id="intro" class="g-lg-5 g-off-lg-1"></div>
+<div id="sign">
+    <div id="signin" class="g-lg-3 blk-cont">
         <h3>ログイン</h3>
         <input class="mail" type="text" tabindex=1 placeholder="mail">
         <input class="pw" type="password" tabindex=2 placeholder="password">
         <button class="btn-con submit" tabindex=3 submit>ログイン</button>
         <div class="print"></div>
+        <div style="margin-top:64px;">
+            <h3>新規登録</h3>
+            <button class="btn-pri signup" tabindex=8 submit>新規登録</button>
+        </div>
     </div>
-    <div id="signup" class="blk-cont">
+    <div id="signup" class="g-lg-4 blk-cont" style="display:none;">
         <h3>新規登録</h3>
         <input class="name" type="text" tabindex=4 placeholder="name">
         <input class="mail" type="text" tabindex=5 placeholder="mail">
         <input class="pw" type="password" tabindex=6 placeholder="password">
         <input class="repeat "type="password" tabindex=7 placeholder="repeat">
         <button class="btn-pri submit" tabindex=8 submit>新規登録</button>
+        <button class="btn-def cancel">取り消す</button>
         <div class="print"></div>
     </div>
-    </div>
+</div>
+<div id="warning" class="g-lg-6 g-off-lg-3">
+    <img src="/oj/img/warning.png"><img>
+    <div class="text">
+        18歳未満の方のアクセスは固くお断りいたします。<br>
+        <span>あなたは18歳以上ですか？</span><br><br>
+        <button class="btn-con confirm" style="margin-left:48px;">は い</button>
+        <button class="btn-def cancel">いいえ</button>
     </div>
 </div>

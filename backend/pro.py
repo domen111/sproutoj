@@ -407,13 +407,34 @@ class ChalListHandler(RequestHandler):
 
         except tornado.web.HTTPError:
             off = 0
+        
+        try:
+            pro_id = int(self.get_argument('proid'))
+
+        except tornado.web.HTTPError:
+            pro_id = None
+
+        try:
+            acct_id = int(self.get_argument('acctid'))
+
+        except tornado.web.HTTPError:
+            acct_id = None
+
+        flt = {
+            'pro_id':pro_id,
+            'acct_id':acct_id
+        }
 
         err,chalstat = yield from ChalService.inst.get_stat(
-                min(self.acct['acct_type'],UserService.ACCTTYPE_USER))
-        err,challist = yield from ChalService.inst.list_chal(
-                off,20,min(self.acct['acct_type'],UserService.ACCTTYPE_USER))
+                min(self.acct['acct_type'],UserService.ACCTTYPE_USER),flt)
+        err,challist = yield from ChalService.inst.list_chal(off,20,
+                min(self.acct['acct_type'],UserService.ACCTTYPE_USER),flt)
 
-        self.render('challist',chalstat = chalstat,challist = challist)
+        self.render('challist',
+                chalstat = chalstat,
+                challist = challist,
+                flt = flt,
+                pageoff = off)
         return
 
     @reqenv
