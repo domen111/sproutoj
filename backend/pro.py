@@ -72,7 +72,11 @@ class ProService:
     def list_pro(self,acct,state = False,clas = None):
         cur = yield self.db.cursor()
 
-        max_status = self._get_acct_limit(acct)
+        if acct == None:
+            max_status = ProService.STATUS_ONLINE
+
+        else:
+            max_status = self._get_acct_limit(acct)
 
         if clas == None:
             clas = [1,2]

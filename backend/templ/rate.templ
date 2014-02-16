@@ -1,0 +1,23 @@
+<link rel="stylesheet" type="text/css" href="/oj/rate.css">
+
+<script type="text/javascript">
+</script>
+
+<div id="ratelist" class="g-lg-10">
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Rate</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for acct in acctlist %}
+            <tr>
+                <td>{{ acct['name'] }}</td>
+                <td>{{ acct['rate'] }}</td>
+            </tr>
+        {% end %}
+        </tbody>
+    </table>
+</div>

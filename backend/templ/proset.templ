@@ -29,14 +29,12 @@
     <table id="filter">
         <thead>
             <tr>
-                <th>Filter</th>
-                <th></th>
+                <th colspan=2>フィルター</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td>Class</td>
-                <td><select class="class">
+                <td colspan=2><select class="class">
                     <option value=-1{% if clas == None%} selected{% end %}>All</option>
                     <option value=1{% if clas == 1%} selected{% end %}>Language</option>
                     <option value=2{% if clas == 2%} selected{% end %}>Algorithm</option>
