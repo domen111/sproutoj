@@ -277,6 +277,23 @@ class ProsetHandler(RequestHandler):
     def psot(self):
         pass
 
+class ProStaticHandler(RequestHandler):
+    @reqenv
+    def get(self,pro_id,path):
+        pro_id = int(pro_id)
+        
+        err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
+        if err:
+            self.finish(err)
+            return
+        
+        if pro['status'] == ProService.STATUS_OFFLINE:
+            self.finish('Eacces')
+            return
+
+        self.set_header('X-Accel-Redirect','/oj/problem/%d/%s'%(pro_id,path))
+        return
+
 class ProHandler(RequestHandler):
     @reqenv
     def get(self,pro_id):
