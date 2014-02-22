@@ -1,17 +1,23 @@
 <link rel="stylesheet" type="text/css" href="/oj/acct.css">
 
-<script type="text/javascript">
+<script id="contjs" type="text/javascript" photo="{{ acct['photo'] }}" cover="{{ acct['cover'] }}">
     function init(){
+        var photo = $('#contjs').attr('photo');
+        var cover = $('#contjs').attr('cover');
         var j_profile = $('#profile');
         var j_reset = $('#reset');
 
         j_profile.find('button.submit').on('click',function(e){
             var name = j_profile.find('input.name').val();
+            var photo = j_profile.find('input.photo').val();
+            var cover = j_profile.find('input.cover').val();
             
             $.post('/oj/be/acct',{
                 'reqtype':'profile',
                 'acct_id':{{ acct['acct_id'] }},
                 'name':name,
+                'photo':photo,
+                'cover':cover
             },function(res){
 		var msg = 'Unknown';
 
@@ -66,40 +72,53 @@
             });
 
         });
+
+        if(photo == ''){
+            photo = 'http://www.gravatar.com/avatar/{{ acct['acct_id'] }}?d=identicon&f=y&s=480;'
+        }
+        if(cover == ''){
+            cover = 'http://i.imgur.com/D5IKr7d.jpg';
+        }
+
+        $('#photo').attr('src',photo);
+        $('#cover').css('background-image','url(' + cover + ')');
     }
 </script>
 
-<div class="g-lg-3">
+<div id="cover" style=""></div>
+<div class="g-r"><div id="summary" class="g-lg-3 g-sm-4">
     <h1>{{ acct['name'] }}</h1>
-    <h3>Total Rate: {{ rate + extrate + bonus }}</h3>
+    <img id="photo"></img>   
     <table>
-        <thead>
-            <tr>
-                <th>Key</th>
-                <th>Value</th>
-            </tr>
-        </thead>
         <tbody>
             <tr>
+                <td><strong>Total Rate</strong></td>
+                <td class="value"><strong>{{ rate + extrate + bonus }}</strong></td>
+            </tr>
+            <tr>
                 <td>Original Rate</td>
-                <td>{{ rate }}</td>
+                <td class="value">{{ rate }}</td>
             </tr>
             <tr>
                 <td>Extend Rate</td>
-                <td>{{ extrate }}</td>
+                <td class="value">{{ extrate }}</td>
             </tr>
             <tr>
                 <td>Bonus</td>
-                <td>+{{ bonus }}</td>
+                <td class="value">+{{ bonus }}</td>
             </tr>
         </tbody>
     </table>
+</div></div>
 
+<div class="g-r"><div class="g-lg-3">
 {% if acct['acct_id'] == acct_id %}
     <div id="profile" class="blk-cont">
         <h1>プロフィール</h1>
         <h3>基本情報</h3>
         <input class="name" type="text" value="{{ acct['name'] }}" placeholder="name">
+        <input class="photo" type="text" value="{{ acct['photo'] }}" placeholder="photo">
+        <input class="cover" type="text" value="{{ acct['cover'] }}" placeholder="cover">
         <button class="btn-con submit">更新</button>
         <div class="print"></div>
     </div>
@@ -112,4 +131,5 @@
         <div class="print"></div>
     </div>
 {% end %}
-</div>
+</div></div>
+

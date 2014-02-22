@@ -16,6 +16,7 @@ from pack import PackService
 class ProService:
     NAME_MIN = 1
     NAME_MAX = 64
+    CODE_MAX = 16384
     STATUS_ONLINE = 0
     STATUS_HIDDEN = 1
     STATUS_OFFLINE = 2
@@ -373,6 +374,10 @@ class SubmitHandler(RequestHandler):
         if reqtype == 'submit':
             pro_id = int(self.get_argument('pro_id'))
             code = self.get_argument('code')
+
+            if len(code) > ProService.CODE_MAX:
+                self.finish('Ecodemax')
+                return
 
             err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
             if err:

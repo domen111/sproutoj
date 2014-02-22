@@ -223,12 +223,16 @@ class AcctHandler(RequestHandler):
         reqtype = self.get_argument('reqtype')
         if reqtype == 'profile':
             name = self.get_argument('name')
+            photo = self.get_argument('photo')
+            cover = self.get_argument('cover')
 
             err,ret = yield from UserService.inst.update_acct(
                     self.acct['acct_id'],
                     self.acct['acct_type'],
                     self.acct['class'],
-                    name)
+                    name,
+                    photo,
+                    cover)
             if err:
                 self.finish(err)
                 return

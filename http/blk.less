@@ -46,19 +46,19 @@
 .g-col-lg (@size){
     .g-col;
     @media (min-width:1280px){
-	width:@size / 12 * 100%;
+	width:@size / 12 * 100% !important;
     }
 }
 .g-col-md (@size){
     .g-col;
     @media (min-width:960px){
-	width:@size / 12 * 100%;
+	width:@size / 12 * 100% !important;
     }
 }
 .g-col-sm (@size){
     .g-col;
     @media all{
-	width:@size / 12 * 100%;
+	width:@size / 12 * 100% !important;
     }
 }
 
@@ -496,11 +496,4 @@ div.blk-prog{
     &:hover{
 	opacity:1;
     }
-}
-
-h2{
-    font-size:24px;
-    width:100%;
-	border-bottom:@gray 1px solid;
-    color:@black;
 }

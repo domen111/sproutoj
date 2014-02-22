@@ -94,19 +94,22 @@ class UserService:
         acct = yield self.mc.get('account@%d'%acct_id)
         if acct == None:
             cur = yield self.db.cursor()
-            yield cur.execute(('SELECT "mail","name","acct_type","class" '
+            yield cur.execute(('SELECT "mail","name","acct_type",'
+                '"class","photo","cover" '
                 'FROM "account" WHERE "acct_id" = %s;'),
                 (acct_id,))
             if cur.rowcount != 1:
                 return ('Enoext',None)
 
-            mail,name,acct_type,clas = cur.fetchone()
+            mail,name,acct_type,clas,photo,cover = cur.fetchone()
             acct = {
                 'acct_id':acct_id,
                 'acct_type':acct_type,
                 'class':clas[0],
                 'mail':mail,
-                'name':name
+                'name':name,
+                'photo':photo,
+                'cover':cover
             }
 
             yield self.mc.set('account@%d'%acct_id,acct)
@@ -115,10 +118,12 @@ class UserService:
             'acct_id':acct['acct_id'],
             'acct_type':acct['acct_type'],
             'class':acct['class'],
-            'name':acct['name']
+            'name':acct['name'],
+            'photo':acct['photo'],
+            'cover':acct['cover']
         })
 
-    def update_acct(self,acct_id,acct_type,clas,name):
+    def update_acct(self,acct_id,acct_type,clas,name,photo,cover):
         if (acct_type not in
                 [UserService.ACCTTYPE_KERNEL,UserService.ACCTTYPE_USER]):
             return ('Eparam',None)
@@ -131,14 +136,14 @@ class UserService:
 
         cur = yield self.db.cursor()
         yield cur.execute(('UPDATE "account" '
-            'SET "acct_type" = %s,"class" = \'{%s}\',"name" = %s '
+            'SET "acct_type" = %s,"class" = \'{%s}\',"name" = %s,'
+            '"photo" = %s,"cover" = %s '
             'WHERE "acct_id" = %s;'),
-            (acct_type,clas,name,acct_id))
+            (acct_type,clas,name,photo,cover,acct_id))
         if cur.rowcount != 1:
             return ('Enoext',None)
 
         yield self.mc.delete('account@%d'%acct_id)
-
         yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
 
         return (None,None)
