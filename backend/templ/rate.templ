@@ -4,6 +4,7 @@
 </script>
 
 <div id="ratelist" class="g-lg-10">
+    <h3>Algorithm</h3>
     <table>
         <thead>
             <tr>
@@ -13,10 +14,50 @@
         </thead>
         <tbody>
         {% for acct in acctlist %}
+            {% if acct['class'] == 2 %}
+                <tr>
+                    <td>{{ acct['name'] }}</td>
+                    <td>{{ acct['rate'] }}</td>
+                </tr>
+            {% end %}
+        {% end %}
+        </tbody>
+    </table>
+    <h3>Language</h3>
+    <table>
+        <thead>
             <tr>
-                <td>{{ acct['name'] }}</td>
-                <td>{{ acct['rate'] }}</td>
+                <th>Name</th>
+                <th>Rate</th>
             </tr>
+        </thead>
+        <tbody>
+        {% for acct in acctlist %}
+            {% if acct['class'] == 1 %}
+                <tr>
+                    <td>{{ acct['name'] }}</td>
+                    <td>{{ acct['rate'] }}</td>
+                </tr>
+            {% end %}
+        {% end %}
+        </tbody>
+    </table>
+    <h3>Other</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Rate</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for acct in acctlist %}
+            {% if acct['class'] == 0 %}
+                <tr>
+                    <td>{{ acct['name'] }}</td>
+                    <td>{{ acct['rate'] }}</td>
+                </tr>
+            {% end %}
         {% end %}
         </tbody>
     </table>

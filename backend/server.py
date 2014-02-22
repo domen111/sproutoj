@@ -16,6 +16,7 @@ from req import reqenv
 from user import UserService
 from pro import ProService
 from pro import ProsetHandler
+from pro import ProStaticHandler
 from pro import ProHandler
 from pro import SubmitHandler
 from pro import ChalHandler
@@ -210,7 +211,8 @@ class AcctHandler(RequestHandler):
             if pro_id in weightmap:
                 bonus += pro['rate'] * weightmap[pro_id]
 
-        self.render('acct',acct = acct,
+        self.render('acct',
+                acct = acct,
                 rate = math.floor(rate),
                 extrate = math.floor(extrate),
                 bonus = math.floor(bonus))
@@ -218,6 +220,36 @@ class AcctHandler(RequestHandler):
 
     @reqenv
     def post(self):
+        reqtype = self.get_argument('reqtype')
+        if reqtype == 'profile':
+            name = self.get_argument('name')
+
+            err,ret = yield from UserService.inst.update_acct(
+                    self.acct['acct_id'],
+                    self.acct['acct_type'],
+                    self.acct['class'],
+                    name)
+            if err:
+                self.finish(err)
+                return
+
+            self.finish('S')
+            return
+
+        elif reqtype == 'reset':
+            old = self.get_argument('old')
+            pw = self.get_argument('pw')
+
+            err,ret = yield from UserService.inst.reset_pw(
+                    self.acct['acct_id'],old,pw)
+            if err:
+                self.finish(err)
+                return
+
+            self.finish('S')
+            return
+
+        self.finish('Eunk')
         return
 
 class RateHandler(RequestHandler):
@@ -233,7 +265,7 @@ class RateHandler(RequestHandler):
             acctlist.append({
                 'acct_id':acct_id,
                 'name':name,
-                'class':clas
+                'class':clas[0]
             })
 
         err,prolist = yield from ProService.inst.list_pro(None)
@@ -355,6 +387,7 @@ class RateHandler(RequestHandler):
             acct['rate'] = totalrate
 
         acctlist.sort(key = lambda acct : acct['rate'],reverse = True)
+
         self.render('rate',acctlist = acctlist)
         return
 
@@ -378,15 +411,17 @@ if __name__ == '__main__':
         ('/index',IndexHandler,args),
         ('/rate',RateHandler,args),
         ('/sign',SignHandler,args),
-        ('/acct/(.*)',AcctHandler,args),
+        ('/acct/(\d+)',AcctHandler,args),
+        ('/acct',AcctHandler,args),
         ('/proset',ProsetHandler,args),
-        ('/pro/(.*)',ProHandler,args),
+        ('/pro/(\d+)/(.+)',ProStaticHandler,args),
+        ('/pro/(\d+)',ProHandler,args),
+        ('/submit/(\d+)',SubmitHandler,args),
         ('/submit',SubmitHandler,args),
-        ('/submit/(.*)',SubmitHandler,args),
+        ('/chal/(\d+)',ChalHandler,args),
         ('/chal',ChalListHandler,args),
-        ('/chal/(.*)',ChalHandler,args),
+        ('/manage/(.+)',ManageHandler,args),
         ('/manage',ManageHandler,args),
-        ('/manage/(.*)',ManageHandler,args),
         ('/pack',PackHandler,args),
     ],cookie_secret = config.COOKIE_SEC,autoescape = 'xhtml_escape')
 

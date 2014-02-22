@@ -54,9 +54,9 @@ class UserService:
         if len(name) > UserService.NAME_MAX:
             return ('Enamemax',None)
 
-        cur = yield self.db.cursor()
         hpw = bcrypt.hashpw(pw.encode('utf-8'),bcrypt.gensalt(12))
 
+        cur = yield self.db.cursor()
         try:
             yield cur.execute(('INSERT INTO "account" '
                 '("mail","password","name","acct_type") '
@@ -140,6 +140,30 @@ class UserService:
         yield self.mc.delete('account@%d'%acct_id)
 
         yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
+
+        return (None,None)
+
+    def reset_pw(self,acct_id,old,pw):
+        if len(pw) < UserService.PW_MIN:
+            return ('Epwmin',None)
+        if len(pw) > UserService.PW_MAX:
+            return ('Epwmax',None)
+
+        cur = yield self.db.cursor()
+        yield cur.execute(('SELECT "password" FROM "account" '
+            'WHERE "acct_id" = %s;'),
+            (acct_id,))
+        if cur.rowcount != 1:
+            return ('Eacct',None)
+
+        hpw = base64.b64decode(cur.fetchone()[0].encode('utf-8'))
+        if bcrypt.hashpw(old.encode('utf-8'),hpw) != hpw:
+            return ('Epwold',None)
+
+        hpw = bcrypt.hashpw(pw.encode('utf-8'),bcrypt.gensalt(12))
+        yield cur.execute(('UPDATE "account" SET "password" = %s '
+            'WHERE "acct_id" = %s;'),
+            (base64.b64encode(hpw).decode('utf-8'),acct_id))
 
         return (None,None)
 

@@ -2,6 +2,70 @@
 
 <script type="text/javascript">
     function init(){
+        var j_profile = $('#profile');
+        var j_reset = $('#reset');
+
+        j_profile.find('button.submit').on('click',function(e){
+            var name = j_profile.find('input.name').val();
+            
+            $.post('/oj/be/acct',{
+                'reqtype':'profile',
+                'acct_id':{{ acct['acct_id'] }},
+                'name':name,
+            },function(res){
+		var msg = 'Unknown';
+
+                if(res[0] == 'E'){
+		    if(res == 'Enamemin'){
+			msg = 'Name length < min';
+		    }else if(res == 'Enamemax'){
+			msg = 'Name length > max';
+		    }
+
+		    j_profile.find('div.print').print(msg);
+                }else{
+		    j_profile.find('div.print').print('Success',true);
+                    index.reload();
+                }
+            });
+
+        });
+
+        j_reset.find('button.submit').on('click',function(e){
+            var old = j_reset.find('input.old').val();
+            var pw = j_reset.find('input.pw').val();
+            var repeat = j_reset.find('input.repeat').val();
+            
+            if(pw != repeat){
+		j_reset.find('div.print').print('Repeat incorrect');
+		return;
+	    }
+	    
+            $.post('/oj/be/acct',{
+                'reqtype':'reset',
+                'acct_id':{{ acct['acct_id'] }},
+                'old':old,
+                'pw':pw,
+            },function(res){
+		var msg = 'Unknown';
+
+                if(res[0] == 'E'){
+		    if(res == 'Epwmin'){
+			msg = 'Password length < min';
+		    }else if(res == 'Epwmax'){
+			msg = 'Password length > max';
+                    }else if(res == 'Epwold'){
+                        msg = 'Previous incorrect';
+                    }
+
+		    j_reset.find('div.print').print(msg);
+                }else{
+		    j_reset.find('div.print').print('Success',true);
+                    j_reset.find('input').val('');
+                }
+            });
+
+        });
     }
 </script>
 
@@ -30,4 +94,22 @@
             </tr>
         </tbody>
     </table>
+
+{% if acct['acct_id'] == acct_id %}
+    <div id="profile" class="blk-cont">
+        <h1>プロフィール</h1>
+        <h3>基本情報</h3>
+        <input class="name" type="text" value="{{ acct['name'] }}" placeholder="name">
+        <button class="btn-con submit">更新</button>
+        <div class="print"></div>
+    </div>
+    <div id="reset" class="blk-cont">
+        <h3>パスワードの変更</h3>
+        <input class="old" type="password" placeholder="previous">
+        <input class="pw" type="password" placeholder="password">
+        <input class="repeat" type="password" placeholder="repeat">
+        <button class="btn-wrn submit">確認する</button>
+        <div class="print"></div>
+    </div>
+{% end %}
 </div>

@@ -5,7 +5,7 @@
 	var j_cont = $('#cont');
 
         function _load_html(){
-            j_cont.load('/oj/problem/{{ pro['pro_id'] }}/cont.html',function(res,status,xhr){
+            j_cont.load('/oj/pro/{{ pro['pro_id'] }}/cont.html',function(res,status,xhr){
                 if(status == 'error'){
                     _load_pdf();
                 }else{
@@ -17,7 +17,7 @@
             });
         }
         function _load_pdf(){
-            PDFJS.getDocument('/oj/problem/{{ pro['pro_id'] }}/cont.pdf').then(function(pdf){
+            PDFJS.getDocument('/oj/pro/{{ pro['pro_id'] }}/cont.pdf').then(function(pdf){
                 var i;
 
                 j_cont.empty();
