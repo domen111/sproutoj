@@ -39,7 +39,9 @@ CREATE TABLE account (
     name character varying,
     password character varying,
     acct_type integer DEFAULT 3,
-    class integer[] DEFAULT '{0}'::integer[]
+    class integer[] DEFAULT '{0}'::integer[],
+    photo character varying DEFAULT ''::character varying,
+    cover character varying DEFAULT ''::character varying
 );
 
 
@@ -190,25 +192,6 @@ CREATE TABLE test_config (
 
 
 ALTER TABLE public.test_config OWNER TO oj;
-
---
--- Name: test_count; Type: MATERIALIZED VIEW; Schema: public; Owner: oj; Tablespace: 
---
-
-CREATE MATERIALIZED VIEW test_count AS
- SELECT test.pro_id,
-    test.test_idx,
-    test.state,
-    account.acct_type,
-    count(1) AS count
-   FROM ((test
-   JOIN challenge ON ((test.chal_id = challenge.chal_id)))
-   JOIN account ON ((challenge.acct_id = account.acct_id)))
-  GROUP BY test.pro_id, test.test_idx, test.state, account.acct_type
-  WITH NO DATA;
-
-
-ALTER TABLE public.test_count OWNER TO oj;
 
 --
 -- Name: test_valid_rate; Type: MATERIALIZED VIEW; Schema: public; Owner: oj; Tablespace: 

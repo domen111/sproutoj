@@ -1,126 +1,23 @@
-#!/usr/bin/python3
-
 import math
-import pg
-import mcd
-import redis
-import tornado.ioloop
-import tornado.netutil
-import tornado.process
-import tornado.httpserver
-import tornado.web
-from tornado.gen import coroutine
 
-import config
 from req import RequestHandler
 from req import reqenv
 from user import UserService
-from acct import AcctHandler
-from acct import SignHandler
 from pro import ProService
-from pro import ProsetHandler
-from pro import ProStaticHandler
-from pro import ProHandler
-from pro import SubmitHandler
-from pro import ChalHandler
-from pro import ChalListHandler
 from chal import ChalService
-from manage import ManageHandler
-from pack import PackHandler
 from pack import PackService
-    
-class IndexHandler(RequestHandler):
+
+class AcctHandler(RequestHandler):
     @reqenv
-    def get(self):
-        manage = False
+    def get(self,acct_id):
+        acct_id = int(acct_id)
 
-        if self.acct['acct_id'] == UserService.ACCTID_GUEST:
-            name = ''
+        err,acct = yield from UserService.inst.info_acct(acct_id)
+        if err:
+            self.finish(err)
+            return
 
-        else:
-            name = self.acct['name']
-
-            if self.acct['acct_type'] == UserService.ACCTTYPE_KERNEL:
-                manage = True
-
-        self.render('index',name = name,manage = manage)
-        return
-
-class SignHandler(RequestHandler):
-    @reqenv
-    def get(self):
-        self.render('sign')
-        return
-
-    @reqenv
-    def post(self):
         cur = yield self.db.cursor()
-
-        reqtype = self.get_argument('reqtype')
-        if reqtype == 'signin':
-            mail = self.get_argument('mail')
-            pw = self.get_argument('pw')
-
-            err,acct_id = yield from UserService.inst.sign_in(mail,pw)
-            if err:
-                self.finish(err)
-                return
-
-            self.set_secure_cookie('id',str(acct_id),
-                    path = '/oj',httponly = True) 
-            self.finish('S')
-            return
-
-        elif reqtype == 'signup':
-            mail = self.get_argument('mail')
-            pw = self.get_argument('pw')
-            name = self.get_argument('name')
-
-            err,acct_id = yield from UserService.inst.sign_up(mail,pw,name)
-            if err:
-                self.finish(err)
-                return
-
-            self.set_secure_cookie('id',str(acct_id),
-                    path = '/oj',httponly = True) 
-            self.finish('S')
-            return
-
-        elif reqtype == 'signout':
-            self.clear_cookie('id',path = '/oj')
-            self.finish('S')
-            return
-
-class RateHandler(RequestHandler):
-    @reqenv
-    def get(self):
-        acctlist = yield self.mc.get('ratelist')
-        if acctlist == None:
-            yield from update_ratelist(self.db,self.mc)
-            acctlist = yield self.mc.get('ratelist')
-
-        self.render('rate',acctlist = acctlist)
-        return
-
-def update_ratelist(db,mc):
-    cur = yield db.cursor()
-    yield cur.execute(('SELECT "acct_id","name","class" FROM "account" '
-        'WHERE "acct_type" = %s;'),
-        (UserService.ACCTTYPE_USER,))
-
-    acctlist = list()
-    for acct_id,name,clas in cur:
-        acctlist.append({
-            'acct_id':acct_id,
-            'name':name,
-            'class':clas[0]
-        })
-
-    err,prolist = yield from ProService.inst.list_pro(None)
-    if err:
-        return
-
-    for acct in acctlist:
         yield cur.execute('SELECT '
                 'SUM("test_valid_rate"."rate" * "test_config"."weight" * '
                 '    CASE WHEN "valid_test"."timestamp" < "valid_test"."expire" '
@@ -148,8 +45,9 @@ def update_ratelist(db,mc):
                 'INNER JOIN "test_config" '
                 'ON "test_valid_rate"."pro_id" = "test_config"."pro_id" '
                 'AND "test_valid_rate"."test_idx" = "test_config"."test_idx";',
-                (acct['acct_id'],ChalService.STATE_AC))
+                (acct_id,ChalService.STATE_AC))
         if cur.rowcount != 1:
+            self.finish('Unknown')
             return
 
         rate = cur.fetchone()[0]
@@ -161,6 +59,7 @@ def update_ratelist(db,mc):
 
         extrate = 0
         if acct['class'] == 0:
+            cur = yield self.db.cursor()
             yield cur.execute('SELECT '
                     'SUM("test_valid_rate"."rate" * "test_config"."weight") '
                     'AS "rate" FROM "test_valid_rate" '
@@ -179,8 +78,9 @@ def update_ratelist(db,mc):
                     'INNER JOIN "test_config" '
                     'ON "test_valid_rate"."pro_id" = "test_config"."pro_id" '
                     'AND "test_valid_rate"."test_idx" = "test_config"."test_idx";',
-                    (acct['acct_id'],ChalService.STATE_AC,[2]))
+                    (acct_id,ChalService.STATE_AC,[2]))
             if cur.rowcount != 1:
+                self.finish('Unknown')
                 return
 
             extrate = cur.fetchone()[0]
@@ -219,63 +119,103 @@ def update_ratelist(db,mc):
         for pro_id,weight in cur:
             weightmap[pro_id] = float(weight)
 
+        err,prolist = yield from ProService.inst.list_pro(acct)
+        if err:
+            self.finish(err)
+            return
+
         bonus = 0
         for pro in prolist:
             pro_id = pro['pro_id']
             if pro_id in weightmap:
                 bonus += pro['rate'] * weightmap[pro_id]
 
-        totalrate = (math.floor(rate) + math.floor(extrate) +
-                math.floor(bonus))
+        self.render('acct',
+                acct = acct,
+                rate = math.floor(rate),
+                extrate = math.floor(extrate),
+                bonus = math.floor(bonus))
+        return
 
-        acct['rate'] = totalrate
+    @reqenv
+    def post(self):
+        reqtype = self.get_argument('reqtype')
+        if reqtype == 'profile':
+            name = self.get_argument('name')
+            photo = self.get_argument('photo')
+            cover = self.get_argument('cover')
 
-    acctlist.sort(key = lambda acct : acct['rate'],reverse = True)
-    yield mc.set('ratelist',acctlist)
+            err,ret = yield from UserService.inst.update_acct(
+                    self.acct['acct_id'],
+                    self.acct['acct_type'],
+                    self.acct['class'],
+                    name,
+                    photo,
+                    cover)
+            if err:
+                self.finish(err)
+                return
 
-if __name__ == '__main__':
-    @coroutine
-    def _update_ratelist():
-        yield from update_ratelist(db,mc)
+            self.finish('S')
+            return
 
-    httpsock = tornado.netutil.bind_sockets(6000)
-    #tornado.process.fork_processes(0)
+        elif reqtype == 'reset':
+            old = self.get_argument('old')
+            pw = self.get_argument('pw')
 
-    db = pg.AsyncPG(config.DBNAME_OJ,config.DBUSER_OJ,config.DBPW_OJ,
-            dbtz = '+8')
-    rs = redis.StrictRedis(host = 'localhost',port = 6379,db = 1)
-    mc = mcd.AsyncMCD()
-    UserService(db,rs)
-    ProService(db,mc)
-    ChalService(db,mc)
-    PackService(db,mc)
+            err,ret = yield from UserService.inst.update_pw(
+                    self.acct['acct_id'],old,pw)
+            if err:
+                self.finish(err)
+                return
 
-    args = {
-        'db':db,
-        'mc':mc,
-        'rs':rs
-    }
-    app = tornado.web.Application([
-        ('/index',IndexHandler,args),
-        ('/rate',RateHandler,args),
-        ('/sign',SignHandler,args),
-        ('/acct/(\d+)',AcctHandler,args),
-        ('/acct',AcctHandler,args),
-        ('/proset',ProsetHandler,args),
-        ('/pro/(\d+)/(.+)',ProStaticHandler,args),
-        ('/pro/(\d+)',ProHandler,args),
-        ('/submit/(\d+)',SubmitHandler,args),
-        ('/submit',SubmitHandler,args),
-        ('/chal/(\d+)',ChalHandler,args),
-        ('/chal',ChalListHandler,args),
-        ('/manage/(.+)',ManageHandler,args),
-        ('/manage',ManageHandler,args),
-        ('/pack',PackHandler,args),
-    ],cookie_secret = config.COOKIE_SEC,autoescape = 'xhtml_escape')
+            self.finish('S')
+            return
 
-    httpsrv = tornado.httpserver.HTTPServer(app)
-    httpsrv.add_sockets(httpsock)
-    
-    timer = tornado.ioloop.PeriodicCallback(_update_ratelist,30000)
-    timer.start()
-    tornado.ioloop.IOLoop.instance().start()
+        self.finish('Eunk')
+        return
+
+class SignHandler(RequestHandler):
+    @reqenv
+    def get(self):
+        self.render('sign')
+        return
+
+    @reqenv
+    def post(self):
+        reqtype = self.get_argument('reqtype')
+        if reqtype == 'signin':
+            mail = self.get_argument('mail')
+            pw = self.get_argument('pw')
+
+            err,sign = yield from UserService.inst.sign_in(mail,pw)
+            if err:
+                self.finish(err)
+                return
+
+            self.set_secure_cookie('sign',sign,
+                    path = '/oj',httponly = True)
+            self.finish('S')
+            return
+
+        elif reqtype == 'signup':
+            mail = self.get_argument('mail')
+            pw = self.get_argument('pw')
+            name = self.get_argument('name')
+
+            err,sign = yield from UserService.inst.sign_up(mail,pw,name)
+            if err:
+                self.finish(err)
+                return
+
+            self.set_secure_cookie('sign',sign,
+                    path = '/oj',httponly = True)
+            self.finish('S')
+            return
+
+        elif reqtype == 'signout':
+            self.clear_cookie('sign',path = '/oj')
+            self.finish('S')
+            return
+
+

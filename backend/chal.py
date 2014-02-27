@@ -16,7 +16,7 @@ class ChalService:
     STATE_JUDGE = 100
 
     STATE_STR = {
-        STATE_AC:'Solved',        
+        STATE_AC:'Accepted',
         STATE_WA:'Wrong Answer',
         STATE_RE:'Runtime Error',
         STATE_TLE:'Time Limit Exceed',
@@ -92,8 +92,8 @@ class ChalService:
             testl.append({
                 'test_idx':test_idx,
                 'state':state,
-                'runtime':runtime,
-                'memory':memory,
+                'runtime':int(runtime),
+                'memory':int(memory),
             })
         
         if (acct['acct_id'] == acct_id or
@@ -189,9 +189,13 @@ class ChalService:
 
             if runtime == None:
                 runtime = 0
+            else:
+                runtime = int(runtime)
 
             if memory == None:
                 memory = 0
+            else:
+                memory = int(memory)
 
             challist.append({
                 'chal_id':chal_id,
@@ -263,6 +267,7 @@ class ChalService:
         while True:
             ret = yield self.ws.read_message()
             if ret == None:
+                print('test')
                 break
 
             res = json.loads(ret,'utf-8')

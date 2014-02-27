@@ -173,7 +173,7 @@ class ManageHandler(RequestHandler):
                     return
 
                 err,ret = yield from UserService.inst.update_acct(acct_id,
-                        acct_type,clas,acct['name'])
+                        acct_type,clas,acct['name'],acct['photo'],acct['cover'])
                 if err:
                     self.finish(err)
                     return

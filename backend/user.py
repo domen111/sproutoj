@@ -1,3 +1,4 @@
+import json
 import base64
 import bcrypt
 import psycopg2
@@ -17,13 +18,13 @@ class UserService:
 
     ACCTID_GUEST = 0
 
-    def __init__(self,db,mc):
+    def __init__(self,db,rs):
         self.db = db
-        self.mc = mc
+        self.rs = rs
 
         UserService.inst = self
 
-    def signin(self,mail,pw):
+    def sign_in(self,mail,pw):
         cur = yield self.db.cursor()
         yield cur.execute(('SELECT "acct_id","password" FROM "account" '
             'WHERE "mail" = %s;'),
@@ -40,7 +41,7 @@ class UserService:
 
         return ('Esign',None)
 
-    def signup(self,mail,pw,name):
+    def sign_up(self,mail,pw,name):
         if len(mail) < UserService.MAIL_MIN:
             return ('Emailmin',None)
         if len(mail) > UserService.MAIL_MAX:
@@ -72,14 +73,14 @@ class UserService:
 
         return (None,cur.fetchone()[0])
 
-    def getsign(self,req):
+    def info_sign(self,req):
         acct_id = req.get_secure_cookie('id')
         if acct_id == None:
             return ('Esign',None)
 
         acct_id = int(acct_id)
 
-        acct = yield self.mc.get('account@%d'%acct_id)
+        acct = self.rs.exists('account@%d'%acct_id)
         if acct == None:
             cur = yield self.db.cursor()
             yield cur.execute('SELECT 1 FROM "account" WHERE "acct_id" = %s;',
@@ -90,9 +91,22 @@ class UserService:
 
         return (None,acct_id)
 
-    def getinfo(self,acct_id):
-        acct = yield self.mc.get('account@%d'%acct_id)
-        if acct == None:
+    def info_acct(self,acct_id):
+        if acct_id == None:
+            return (None,{
+                'acct_id':0,
+                'acct_type':UserService.ACCTTYPE_USER,
+                'class':0,
+                'name':'',
+                'photo':'',
+                'cover':''
+            })
+
+        acct = self.rs.get('account@%d'%acct_id)
+        if acct != None:
+            acct = json.loads(acct.decode('utf-8'))
+
+        else:
             cur = yield self.db.cursor()
             yield cur.execute(('SELECT "mail","name","acct_type",'
                 '"class","photo","cover" '
@@ -112,7 +126,7 @@ class UserService:
                 'cover':cover
             }
 
-            yield self.mc.set('account@%d'%acct_id,acct)
+            self.rs.setnx('account@%d'%acct_id,json.dumps(acct))
 
         return (None,{
             'acct_id':acct['acct_id'],
@@ -143,12 +157,12 @@ class UserService:
         if cur.rowcount != 1:
             return ('Enoext',None)
 
-        yield self.mc.delete('account@%d'%acct_id)
+        self.rs.delete('account@%d'%acct_id)
         yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
 
         return (None,None)
 
-    def reset_pw(self,acct_id,old,pw):
+    def update_pw(self,acct_id,old,pw):
         if len(pw) < UserService.PW_MIN:
             return ('Epwmin',None)
         if len(pw) > UserService.PW_MAX:
