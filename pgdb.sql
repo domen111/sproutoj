@@ -122,17 +122,36 @@ CREATE TABLE test (
 ALTER TABLE public.test OWNER TO oj;
 
 --
+-- Name: test_valid_rate; Type: TABLE; Schema: public; Owner: oj; Tablespace: 
+--
+
+CREATE TABLE test_valid_rate (
+    pro_id integer,
+    test_idx integer,
+    count bigint,
+    rate integer
+);
+
+
+ALTER TABLE public.test_valid_rate OWNER TO oj;
+
+--
 -- Name: challenge_state; Type: MATERIALIZED VIEW; Schema: public; Owner: oj; Tablespace: 
 --
 
 CREATE MATERIALIZED VIEW challenge_state AS
  SELECT test.chal_id,
-    test.pro_id,
     max(test.state) AS state,
     sum(test.runtime) AS runtime,
-    sum(test.memory) AS memory
-   FROM test
-  GROUP BY test.chal_id, test.pro_id
+    sum(test.memory) AS memory,
+    sum(
+        CASE
+            WHEN (test.state = 1) THEN test_valid_rate.rate
+            ELSE 0
+        END) AS rate
+   FROM (test
+   JOIN test_valid_rate ON (((test.pro_id = test_valid_rate.pro_id) AND (test.test_idx = test_valid_rate.test_idx))))
+  GROUP BY test.chal_id
   WITH NO DATA;
 
 
@@ -192,25 +211,6 @@ CREATE TABLE test_config (
 
 
 ALTER TABLE public.test_config OWNER TO oj;
-
---
--- Name: test_valid_rate; Type: MATERIALIZED VIEW; Schema: public; Owner: oj; Tablespace: 
---
-
-CREATE MATERIALIZED VIEW test_valid_rate AS
- SELECT test.pro_id,
-    test.test_idx,
-    count(DISTINCT account.acct_id) AS count,
-    (power((4096)::double precision, ((1)::double precision / ((count(DISTINCT account.acct_id) + 5))::double precision)) * (500)::double precision) AS rate
-   FROM ((test
-   JOIN account ON ((test.acct_id = account.acct_id)))
-   JOIN problem ON (((test.pro_id = problem.pro_id) AND (account.class && problem.class))))
-  WHERE ((test.state = 1) AND (age(test."timestamp", problem.expire) < '7 days'::interval))
-  GROUP BY test.pro_id, test.test_idx
-  WITH NO DATA;
-
-
-ALTER TABLE public.test_valid_rate OWNER TO oj;
 
 --
 -- Name: acct_id; Type: DEFAULT; Schema: public; Owner: oj
@@ -314,6 +314,27 @@ CREATE INDEX problem_idx_class ON problem USING gin (class);
 --
 
 CREATE INDEX test_idx_acct_id ON test USING btree (acct_id);
+
+
+--
+-- Name: _RETURN; Type: RULE; Schema: public; Owner: oj
+--
+
+CREATE RULE "_RETURN" AS
+    ON SELECT TO test_valid_rate DO INSTEAD  SELECT test_config.pro_id,
+    test_config.test_idx,
+    count(DISTINCT account.acct_id) AS count,
+    (floor(((
+        CASE
+            WHEN (count(DISTINCT account.acct_id) = 0) THEN (2000)::double precision
+            ELSE (power((4096)::double precision, ((1)::double precision / ((count(DISTINCT account.acct_id) + 5))::double precision)) * (500)::double precision)
+        END * (test_config.weight)::double precision) / (100)::double precision)))::integer AS rate
+   FROM (((test
+   JOIN account ON ((test.acct_id = account.acct_id)))
+   JOIN problem ON (((test.pro_id = problem.pro_id) AND (account.class && problem.class))))
+   RIGHT JOIN test_config ON (((test.pro_id = test_config.pro_id) AND (test.test_idx = test_config.test_idx))))
+  WHERE ((test.state IS NULL) OR ((test.state = 1) AND (age(test."timestamp", problem.expire) < '7 days'::interval)))
+  GROUP BY test_config.pro_id, test_config.test_idx;
 
 
 --

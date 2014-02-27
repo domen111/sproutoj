@@ -21,9 +21,9 @@ class ProService:
     STATUS_HIDDEN = 1
     STATUS_OFFLINE = 2
 
-    def __init__(self,db,mc):
+    def __init__(self,db,rs):
         self.db = db
-        self.mc = mc
+        self.rs = rs
 
         ProService.inst = self
 
@@ -70,8 +70,14 @@ class ProService:
             'testm_conf':testm_conf
         })
 
-    def list_pro(self,acct,state = False,clas = None):
-        cur = yield self.db.cursor()
+    def list_pro(self,acct = None,state = False,clas = None):
+        class _encoder(json.JSONEncoder):
+            def default(self,obj):
+                if isinstance(obj,datetime.datetime):
+                    return obj.strftime('%Y-%m-%dT%H:%M:%S%z')
+
+                else:
+                    return json.JSONEncoder.default(self,obj)
 
         if acct == None:
             max_status = ProService.STATUS_ONLINE
@@ -85,11 +91,37 @@ class ProService:
         else:
             clas = [clas]
 
-        if state == False:
-            yield cur.execute(('SELECT "pro_id","name","status","expire",NULL '
-                'FROM "problem" WHERE "status" <= %s AND "class" && %s '
+        cur = yield self.db.cursor()
+
+        statemap = {}
+        if state == True:
+            yield cur.execute(('SELECT "problem"."pro_id",'
+                'MIN("challenge_state"."state") AS "state" '
+                'FROM "challenge" '
+                'INNER JOIN "challenge_state" '
+                'ON "challenge"."chal_id" = "challenge_state"."chal_id" '
+                'AND "challenge"."acct_id" = %s '
+                'INNER JOIN "problem" '
+                'ON "challenge"."pro_id" = "problem"."pro_id" '
+                'WHERE "problem"."status" <= %s AND "problem"."class" && %s '
+                'GROUP BY "problem"."pro_id" '
                 'ORDER BY "pro_id" ASC;'),
-                (max_status,clas))
+                (acct['acct_id'],max_status,clas))
+
+            for pro_id,state in cur:
+                statemap[pro_id] = state
+        
+        field = '%d|%s'%(max_status,str(clas))
+        prolist = self.rs.hget('prolist',field)
+        if prolist != None:
+            prolist = json.loads(prolist.decode('utf-8'))
+            for pro in prolist:
+                expire = pro['expire']
+                if expire != None:
+                    expire = datetime.datetime.strptime(expire,
+                            '%Y-%m-%dT%H:%M:%S%z')
+
+                pro['expire'] = expire
 
         else:
             yield cur.execute(('SELECT '
@@ -97,54 +129,37 @@ class ProService:
                 '"problem"."name",'
                 '"problem"."status",'
                 '"problem"."expire",'
-                'MIN("challenge_state"."state") AS "state" '
-                'FROM "challenge" '
-                'INNER JOIN "challenge_state" '
-                'ON "challenge"."chal_id" = "challenge_state"."chal_id" '
-                'AND "challenge"."acct_id" = %s '
-                'RIGHT JOIN "problem" '
-                'ON "challenge"."pro_id" = "problem"."pro_id" '
-                'WHERE "problem"."status" <= %s AND "problem"."class" && %s '
+                'SUM("test_valid_rate"."rate") AS "rate" '
+                'FROM "problem" '
+                'INNER JOIN "test_valid_rate" '
+                'ON "test_valid_rate"."pro_id" = "problem"."pro_id" '
+                'WHERE "status" <= %s AND "class" && %s '
                 'GROUP BY "problem"."pro_id" '
                 'ORDER BY "pro_id" ASC;'),
-                (acct['acct_id'],max_status,clas))
+                (max_status,clas))
 
-        prolist = list()
-        for pro_id,name,status,expire,state in cur:
-            if expire == datetime.datetime.max:
-                expire = None
+            prolist = list()
+            for pro_id,name,status,expire,rate in cur:
+                if expire == datetime.datetime.max:
+                    expire = None
 
-            prolist.append({
-                'pro_id':pro_id,
-                'name':name,
-                'status':status,
-                'expire':expire,
-                'state':state,
-                'rate':2000
-            })
-        
-        yield cur.execute(('SELECT "problem"."pro_id",'
-            'SUM("test_config"."weight") AS "weight",'
-            'SUM("test_valid_rate"."rate" * "test_config"."weight") AS "rate" '
-            'FROM "test_valid_rate" '
-            'INNER JOIN "test_config" '
-            'ON "test_valid_rate"."pro_id" = "test_config"."pro_id" '
-            'AND "test_valid_rate"."test_idx" = "test_config"."test_idx" '
-            'INNER JOIN "problem" '
-            'ON "test_valid_rate"."pro_id" = "problem"."pro_id" '
-            'WHERE "problem"."status" <= %s '
-            'GROUP BY "problem"."pro_id" '
-            'ORDER BY "pro_id" ASC;'),
-            (max_status,))
+                prolist.append({
+                    'pro_id':pro_id,
+                    'name':name,
+                    'status':status,
+                    'expire':expire,
+                    'rate':rate,
+                })
 
-        ratemap = {}
-        for pro_id,weight,rate in cur:
-            ratemap[pro_id] = math.floor((rate + (100 - weight) * 2000) / 100)
+            self.rs.hset('prolist',field,json.dumps(prolist,cls = _encoder))
 
         for pro in prolist:
             pro_id = pro['pro_id']
-            if pro_id in ratemap:
-                pro['rate'] = ratemap[pro_id]
+            if pro_id in statemap:
+                pro['state'] = statemap[pro_id]
+
+            else:
+                pro['state'] = None
 
         return (None,prolist)
 

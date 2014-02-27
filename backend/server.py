@@ -95,7 +95,7 @@ class RateHandler(RequestHandler):
     @reqenv
     def get(self):
         acctlist = yield self.mc.get('ratelist')
-        if acctlist == None:
+        if acctlist != None:
             yield from update_ratelist(self.db,self.mc)
             acctlist = yield self.mc.get('ratelist')
 
@@ -116,13 +116,76 @@ def update_ratelist(db,mc):
             'class':clas[0]
         })
 
-    err,prolist = yield from ProService.inst.list_pro(None)
-    if err:
-        return
+    yield cur.execute(('SELECT "sum"."acct_id",SUM("sum"."rate") FROM ('
+        '    SELECT "challenge"."acct_id","challenge"."pro_id",'
+        '    MAX("challenge_state"."rate" * '
+        '        CASE WHEN "challenge"."timestamp" < "problem"."expire" '
+        '        THEN 1 ELSE '
+        '        (1 - (GREATEST(date_part(\'days\',justify_interval('
+        '        age("challenge"."timestamp","problem"."expire") '
+        '        + \'1 days\')),-1)) * 0.15) '
+        '        END) '
+        '    AS "rate" '
+        '    FROM "challenge" '
+        '    INNER JOIN "problem" '
+        '    ON "challenge"."pro_id" = "problem"."pro_id" '
+        '    INNER JOIN "account" '
+        '    ON "challenge"."acct_id" = "account"."acct_id" '
+        '    INNER JOIN "challenge_state" '
+        '    ON "challenge"."chal_id" = "challenge_state"."chal_id" '
+        '    WHERE "account"."class" && "problem"."class" '
+        '    AND "account"."acct_type" = %s '
+        '    AND "problem"."status" = %s '
+        '    GROUP BY "challenge"."acct_id","challenge"."pro_id"'
+        ') AS "sum" '
+        'GROUP BY "sum"."acct_id" ORDER BY "sum"."acct_id" ASC;'),
+        (UserService.ACCTTYPE_USER,ProService.STATUS_ONLINE))
+
+    ratemap = {}
+    for acct_id,rate in cur:
+        ratemap[acct_id] = rate
+
+    yield cur.execute(('SELECT "rank"."acct_id","rank"."pro_id",'
+        '(0.3 * power(0.66,("rank"."rank" - 1))) AS "weight" FROM ('
+        '    SELECT "challenge"."acct_id","challenge"."pro_id",'
+        '    row_number() OVER ('
+        '        PARTITION BY "challenge"."pro_id" ORDER BY MIN('
+        '        "challenge"."chal_id") ASC) AS "rank" '
+        '    FROM "challenge" '
+        '    INNER JOIN "problem" '
+        '    ON "challenge"."pro_id" = "problem"."pro_id" '
+        '    INNER JOIN "account" '
+        '    ON "challenge"."acct_id" = "account"."acct_id" '
+        '    INNER JOIN "challenge_state" '
+        '    ON "challenge"."chal_id" = "challenge_state"."chal_id" '
+        '    WHERE "account"."class" && "problem"."class" '
+        '    AND "challenge_state"."state" = 1 '
+        '    AND "account"."acct_type" = %s '
+        '    AND "problem"."status" = %s '
+        '    GROUP BY "challenge"."acct_id","challenge"."pro_id"'
+        ') AS "rank" WHERE "rank"."rank" < 17;'),
+        (UserService.ACCTTYPE_USER,ProService.STATUS_ONLINE))
+    
+    err,prolist = yield from ProService.inst.list_pro()
+    promap = {}
+    for pro in prolist:
+        promap[pro['pro_id']] = pro['rate']
+
+    bonusmap = {}
+    for acct_id,pro_id,weight in cur:
+        ratemap[acct_id] += promap[pro_id] * float(weight)
 
     for acct in acctlist:
+        acct_id = acct['acct_id']
+        if acct_id in ratemap:
+            acct['rate'] = math.floor(ratemap[acct_id])
+
+        else:
+            acct['rate'] = 0
+
+        '''
         yield cur.execute('SELECT '
-                'SUM("test_valid_rate"."rate" * "test_config"."weight" * '
+                'SUM("test_valid_rate"."rate" * '
                 '    CASE WHEN "valid_test"."timestamp" < "valid_test"."expire" '
                 '    THEN 1 ELSE '
                 '    (1 - (GREATEST(date_part(\'days\',justify_interval('
@@ -144,25 +207,20 @@ def update_ratelist(db,mc):
                 '    GROUP BY "test"."pro_id","test"."test_idx","problem"."expire"'
                 ') AS "valid_test" '
                 'ON "test_valid_rate"."pro_id" = "valid_test"."pro_id" '
-                'AND "test_valid_rate"."test_idx" = "valid_test"."test_idx" '
-                'INNER JOIN "test_config" '
-                'ON "test_valid_rate"."pro_id" = "test_config"."pro_id" '
-                'AND "test_valid_rate"."test_idx" = "test_config"."test_idx";',
+                'AND "test_valid_rate"."test_idx" = "valid_test"."test_idx" ',
                 (acct['acct_id'],ChalService.STATE_AC))
         if cur.rowcount != 1:
             return
 
         rate = cur.fetchone()[0]
+        rate = None
         if rate == None:
             rate = 0
         
-        else:
-            rate = rate / 100
-
         extrate = 0
         if acct['class'] == 0:
             yield cur.execute('SELECT '
-                    'SUM("test_valid_rate"."rate" * "test_config"."weight") '
+                    'SUM("test_valid_rate"."rate") '
                     'AS "rate" FROM "test_valid_rate" '
                     'INNER JOIN ('
                     '    SELECT "test"."pro_id","test"."test_idx" '
@@ -175,10 +233,7 @@ def update_ratelist(db,mc):
                     '    GROUP BY "test"."pro_id","test"."test_idx"'
                     ') AS "valid_test" '
                     'ON "test_valid_rate"."pro_id" = "valid_test"."pro_id" '
-                    'AND "test_valid_rate"."test_idx" = "valid_test"."test_idx" '
-                    'INNER JOIN "test_config" '
-                    'ON "test_valid_rate"."pro_id" = "test_config"."pro_id" '
-                    'AND "test_valid_rate"."test_idx" = "test_config"."test_idx";',
+                    'AND "test_valid_rate"."test_idx" = "valid_test"."test_idx" ',
                     (acct['acct_id'],ChalService.STATE_AC,[2]))
             if cur.rowcount != 1:
                 return
@@ -186,10 +241,9 @@ def update_ratelist(db,mc):
             extrate = cur.fetchone()[0]
             if extrate == None:
                 extrate = 0
+        '''
 
-            else:
-                extrate = extrate / 100
-
+        '''
         yield cur.execute(('SELECT '
             '"pro_rank"."pro_id",'
             '(0.3 * power(0.66,("pro_rank"."rank" - 1))) AS "weight" FROM ('
@@ -229,6 +283,7 @@ def update_ratelist(db,mc):
                 math.floor(bonus))
 
         acct['rate'] = totalrate
+        '''
 
     acctlist.sort(key = lambda acct : acct['rate'],reverse = True)
     yield mc.set('ratelist',acctlist)
@@ -246,7 +301,7 @@ if __name__ == '__main__':
     rs = redis.StrictRedis(host = 'localhost',port = 6379,db = 1)
     mc = mcd.AsyncMCD()
     UserService(db,rs)
-    ProService(db,mc)
+    ProService(db,rs)
     ChalService(db,mc)
     PackService(db,mc)
 
@@ -276,6 +331,6 @@ if __name__ == '__main__':
     httpsrv = tornado.httpserver.HTTPServer(app)
     httpsrv.add_sockets(httpsock)
     
-    timer = tornado.ioloop.PeriodicCallback(_update_ratelist,30000)
-    timer.start()
+    #timer = tornado.ioloop.PeriodicCallback(_update_ratelist,30000)
+    #timer.start()
     tornado.ioloop.IOLoop.instance().start()

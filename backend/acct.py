@@ -19,7 +19,7 @@ class AcctHandler(RequestHandler):
 
         cur = yield self.db.cursor()
         yield cur.execute('SELECT '
-                'SUM("test_valid_rate"."rate" * "test_config"."weight" * '
+                'SUM("test_valid_rate"."rate" * '
                 '    CASE WHEN "valid_test"."timestamp" < "valid_test"."expire" '
                 '    THEN 1 ELSE '
                 '    (1 - (GREATEST(date_part(\'days\',justify_interval('
@@ -41,10 +41,7 @@ class AcctHandler(RequestHandler):
                 '    GROUP BY "test"."pro_id","test"."test_idx","problem"."expire"'
                 ') AS "valid_test" '
                 'ON "test_valid_rate"."pro_id" = "valid_test"."pro_id" '
-                'AND "test_valid_rate"."test_idx" = "valid_test"."test_idx" '
-                'INNER JOIN "test_config" '
-                'ON "test_valid_rate"."pro_id" = "test_config"."pro_id" '
-                'AND "test_valid_rate"."test_idx" = "test_config"."test_idx";',
+                'AND "test_valid_rate"."test_idx" = "valid_test"."test_idx";'
                 (acct_id,ChalService.STATE_AC))
         if cur.rowcount != 1:
             self.finish('Unknown')
@@ -53,15 +50,12 @@ class AcctHandler(RequestHandler):
         rate = cur.fetchone()[0]
         if rate == None:
             rate = 0
-        
-        else:
-            rate = rate / 100
 
         extrate = 0
         if acct['class'] == 0:
             cur = yield self.db.cursor()
             yield cur.execute('SELECT '
-                    'SUM("test_valid_rate"."rate" * "test_config"."weight") '
+                    'SUM("test_valid_rate"."rate") '
                     'AS "rate" FROM "test_valid_rate" '
                     'INNER JOIN ('
                     '    SELECT "test"."pro_id","test"."test_idx" '
@@ -74,10 +68,7 @@ class AcctHandler(RequestHandler):
                     '    GROUP BY "test"."pro_id","test"."test_idx"'
                     ') AS "valid_test" '
                     'ON "test_valid_rate"."pro_id" = "valid_test"."pro_id" '
-                    'AND "test_valid_rate"."test_idx" = "valid_test"."test_idx" '
-                    'INNER JOIN "test_config" '
-                    'ON "test_valid_rate"."pro_id" = "test_config"."pro_id" '
-                    'AND "test_valid_rate"."test_idx" = "test_config"."test_idx";',
+                    'AND "test_valid_rate"."test_idx" = "valid_test"."test_idx";'
                     (acct_id,ChalService.STATE_AC,[2]))
             if cur.rowcount != 1:
                 self.finish('Unknown')
@@ -86,9 +77,6 @@ class AcctHandler(RequestHandler):
             extrate = cur.fetchone()[0]
             if extrate == None:
                 extrate = 0
-
-            else:
-                extrate = extrate / 100
 
         yield cur.execute(('SELECT '
             '"pro_rank"."pro_id",'
