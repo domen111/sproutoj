@@ -6,7 +6,10 @@ import tornado.gen
 import tornado.web
 import tornado.websocket
 
-from user import UserService
+from user import UserConst
+
+class Service:
+    pass
 
 class RequestHandler(tornado.web.RequestHandler):
     def __init__(self,*args,**kwargs):
@@ -34,7 +37,7 @@ class RequestHandler(tornado.web.RequestHandler):
 
         tpldr = tornado.template.Loader('templ')
 
-        if self.acct['acct_id'] != UserService.ACCTID_GUEST:
+        if self.acct['acct_id'] != UserConst.ACCTID_GUEST:
             kwargs['acct_id'] = self.acct['acct_id']
         
         else:
@@ -48,11 +51,19 @@ class RequestHandler(tornado.web.RequestHandler):
 
         return
 
+class WebSocketHandler(tornado.websocket.WebSocketHandler):
+    def __init__(self,*args,**kwargs):
+        self.db = kwargs.pop('db')
+        self.mc = kwargs.pop('mc')
+        self.rs = kwargs.pop('rs')
+
+        super().__init__(*args,**kwargs)
+
 def reqenv(func):
     @tornado.gen.coroutine
     def wrap(self,*args,**kwargs):
-        err,acct_id = yield from UserService.inst.info_sign(self)
-        err,self.acct = yield from UserService.inst.info_acct(acct_id)
+        err,acct_id = yield from Service.Acct.info_sign(self)
+        err,self.acct = yield from Service.Acct.info_acct(acct_id)
 
         ret = func(self,*args,**kwargs)
         if isinstance(ret,types.GeneratorType):
@@ -61,10 +72,3 @@ def reqenv(func):
         return ret
 
     return wrap
-
-class WebSocketHandler(tornado.websocket.WebSocketHandler):
-    def __init__(self,*args,**kwargs):
-        self.db = kwargs.pop('db')
-        self.mc = kwargs.pop('mc')
-
-        super().__init__(*args,**kwargs)

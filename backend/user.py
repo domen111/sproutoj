@@ -5,6 +5,19 @@ import psycopg2
 
 import config
 
+class UserConst:
+    MAIL_MAX = 1024
+    MAIL_MIN = 1
+    PW_MAX = 1024
+    PW_MIN = 1
+    NAME_MAX = 32
+    NAME_MIN = 1
+
+    ACCTTYPE_KERNEL = 0
+    ACCTTYPE_USER = 3
+
+    ACCTID_GUEST = 0
+
 class UserService:
     MAIL_MAX = 1024
     MAIL_MIN = 1
@@ -186,7 +199,7 @@ class UserService:
 
         return (None,None)
 
-    def list_acct(self):
+    def list_acct(self,mail = False):
         cur = yield self.db.cursor()
         yield cur.execute(('SELECT "acct_id","acct_type","name","mail","class" '
             'FROM "account" ORDER BY "acct_id" ASC;'))
@@ -200,5 +213,9 @@ class UserService:
                 'mail':mail,
                 'class':clas[0]
             })
+
+        if mail == False:
+            for acct in acctlist:
+                del acct['mail']
 
         return (None,acctlist)

@@ -1,0 +1,66 @@
+{% from chal import ChalConst %}
+
+<link rel="stylesheet" type="text/css" href="/oj/scbd.css">
+
+<script type="text/javascript">
+</script>
+
+<div class="g-lg-12">
+    <div style="width:100%; overflow-x:scroll;"><table style="width:{{ 192 + len(prolist) * 64 }}px;">
+        <thead style="overflow-y:scroll; display:block;">
+            <tr>
+                <th style="width:160px;">Algorithm</th>
+            {% for pro in prolist %}
+                <th class="pro" style="width:64px;">{{ pro['pro_id'] }}</th>
+            {% end %}
+            </tr>
+        </thead>
+        <tbody style="height:800px; overflow-y:scroll; display:block;">
+        {% for acct in acctlist %}
+        {% if acct['class'] == 2 %}
+        {% set acct_id = acct['acct_id'] %}
+            <tr>
+                <td style="width:160px;">{{ acct['name'] }}</td>
+            {% for pro in prolist %}
+            {% set pro_id = pro['pro_id'] %}
+            {% if acct_id in statemap and pro_id in statemap[acct_id] %}
+                <td class="state state-{{ statemap[acct_id][pro_id] }}" style="width:64px;">{{ ChalConst.STATE_STR[statemap[acct_id][pro_id]] }}</td>
+            {% else %}
+                <td class="state" style="width:64px;"></td>
+            {% end %}
+            {% end %}
+            </tr>
+        {% end %}
+        {% end %}
+        </tbody>
+    </table></div>
+    
+    <div style="width:100%; overflow-x:scroll;"><table style="width:{{ 192 + len(prolist) * 64 }}px;">
+        <thead style="overflow-y:scroll; display:block;">
+            <tr>
+                <th style="width:160px;">Language</th>
+            {% for pro in prolist %}
+                <th class="pro" style="width:64px;">{{ pro['pro_id'] }}</th>
+            {% end %}
+            </tr>
+        </thead>
+        <tbody style="height:800px; overflow-y:scroll; display:block;">
+        {% for acct in acctlist %}
+        {% if acct['class'] == 1 %}
+        {% set acct_id = acct['acct_id'] %}
+            <tr>
+                <td style="width:160px;">{{ acct['name'] }}</td>
+            {% for pro in prolist %}
+            {% set pro_id = pro['pro_id'] %}
+            {% if acct_id in statemap and pro_id in statemap[acct_id] %}
+                <td class="state state-{{ statemap[acct_id][pro_id] }}" style="width:64px;">{{ ChalConst.STATE_STR[statemap[acct_id][pro_id]] }}</td>
+            {% else %}
+                <td class="state" style="width:64px;"></td>
+            {% end %}
+            {% end %}
+            </tr>
+        {% end %}
+        {% end %}
+        </tbody>
+    </table></div>
+</div>

@@ -5,6 +5,27 @@ from tornado.websocket import websocket_connect
 
 from user import UserService
 
+class ChalConst:
+    STATE_AC = 1
+    STATE_WA = 2
+    STATE_RE = 3
+    STATE_TLE = 4
+    STATE_MLE = 5
+    STATE_CE = 6
+    STATE_ERR = 7
+    STATE_JUDGE = 100
+
+    STATE_STR = {
+        STATE_AC:'AC',
+        STATE_WA:'WA',
+        STATE_RE:'RE',
+        STATE_TLE:'TLE',
+        STATE_MLE:'MLE',
+        STATE_CE:'CE',
+        STATE_ERR:'IE',
+        STATE_JUDGE:'JDG',
+    }
+
 class ChalService:
     STATE_AC = 1
     STATE_WA = 2

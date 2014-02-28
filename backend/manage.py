@@ -42,7 +42,7 @@ class ManageHandler(RequestHandler):
             return
 
         elif page == 'acct':
-            err,acctlist = yield from UserService.inst.list_acct()
+            err,acctlist = yield from UserService.inst.list_acct(True)
 
             self.render('manage-acct',page = page,acctlist = acctlist)
             return

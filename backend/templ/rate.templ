@@ -13,11 +13,11 @@
             </tr>
         </thead>
         <tbody>
-        {% for acct in acctlist %}
-            {% if acct['class'] == 2 %}
+        {% for rate in ratelist %}
+            {% if rate['class'] == 2 %}
                 <tr>
-                    <td>{{ acct['name'] }}</td>
-                    <td>{{ acct['rate'] }}</td>
+                    <td>{{ rate['name'] }}</td>
+                    <td>{{ rate['rate'] }}</td>
                 </tr>
             {% end %}
         {% end %}
@@ -32,11 +32,11 @@
             </tr>
         </thead>
         <tbody>
-        {% for acct in acctlist %}
-            {% if acct['class'] == 1 %}
+        {% for rate in ratelist %}
+            {% if rate['class'] == 1 %}
                 <tr>
-                    <td>{{ acct['name'] }}</td>
-                    <td>{{ acct['rate'] }}</td>
+                    <td>{{ rate['name'] }}</td>
+                    <td>{{ rate['rate'] }}</td>
                 </tr>
             {% end %}
         {% end %}
@@ -51,11 +51,11 @@
             </tr>
         </thead>
         <tbody>
-        {% for acct in acctlist %}
-            {% if acct['class'] == 0 %}
+        {% for rate in ratelist %}
+            {% if rate['class'] == 0 %}
                 <tr>
-                    <td>{{ acct['name'] }}</td>
-                    <td>{{ acct['rate'] }}</td>
+                    <td>{{ rate['name'] }}</td>
+                    <td>{{ rate['rate'] }}</td>
                 </tr>
             {% end %}
         {% end %}

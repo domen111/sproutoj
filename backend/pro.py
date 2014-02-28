@@ -13,6 +13,14 @@ from user import UserService
 from chal import ChalService
 from pack import PackService
 
+class ProConst:
+    NAME_MIN = 1
+    NAME_MAX = 64
+    CODE_MAX = 16384
+    STATUS_ONLINE = 0
+    STATUS_HIDDEN = 1
+    STATUS_OFFLINE = 2
+
 class ProService:
     NAME_MIN = 1
     NAME_MAX = 64
@@ -163,7 +171,7 @@ class ProService:
 
         return (None,prolist)
 
-    def add_pro(self,name,status,clas,expire,pack_token = None):
+    def add_pro(self,name,status,clas,expire,pack_token):
         if len(name) < ProService.NAME_MIN:
             return ('Enamemin',None)
         if len(name) > ProService.NAME_MAX:
@@ -188,11 +196,12 @@ class ProService:
         
         pro_id = cur.fetchone()[0]
 
-        if pack_token != None:
-            err,ret = yield from self._unpack_pro(pro_id,pack_token)
-            if err:
-                return (err,None)
+        err,ret = yield from self._unpack_pro(pro_id,pack_token)
+        if err:
+            return (err,None)
 
+        yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
+        self.rs.delete('prolist')
         return (None,pro_id)
 
     def update_pro(self,pro_id,name,status,clas,expire,pack_token = None):
@@ -222,7 +231,10 @@ class ProService:
             err,ret = yield from self._unpack_pro(pro_id,pack_token)
             if err:
                 return (err,None)
-        
+
+            yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
+
+        self.rs.delete('prolist')
         return (None,None)
 
     def _get_acct_limit(self,acct):

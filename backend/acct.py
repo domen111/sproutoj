@@ -18,7 +18,7 @@ class AcctHandler(RequestHandler):
             return
 
         cur = yield self.db.cursor()
-        yield cur.execute('SELECT '
+        yield cur.execute(('SELECT '
                 'SUM("test_valid_rate"."rate" * '
                 '    CASE WHEN "valid_test"."timestamp" < "valid_test"."expire" '
                 '    THEN 1 ELSE '
@@ -41,7 +41,7 @@ class AcctHandler(RequestHandler):
                 '    GROUP BY "test"."pro_id","test"."test_idx","problem"."expire"'
                 ') AS "valid_test" '
                 'ON "test_valid_rate"."pro_id" = "valid_test"."pro_id" '
-                'AND "test_valid_rate"."test_idx" = "valid_test"."test_idx";'
+                'AND "test_valid_rate"."test_idx" = "valid_test"."test_idx";'),
                 (acct_id,ChalService.STATE_AC))
         if cur.rowcount != 1:
             self.finish('Unknown')
@@ -54,7 +54,7 @@ class AcctHandler(RequestHandler):
         extrate = 0
         if acct['class'] == 0:
             cur = yield self.db.cursor()
-            yield cur.execute('SELECT '
+            yield cur.execute(('SELECT '
                     'SUM("test_valid_rate"."rate") '
                     'AS "rate" FROM "test_valid_rate" '
                     'INNER JOIN ('
@@ -68,7 +68,7 @@ class AcctHandler(RequestHandler):
                     '    GROUP BY "test"."pro_id","test"."test_idx"'
                     ') AS "valid_test" '
                     'ON "test_valid_rate"."pro_id" = "valid_test"."pro_id" '
-                    'AND "test_valid_rate"."test_idx" = "valid_test"."test_idx";'
+                    'AND "test_valid_rate"."test_idx" = "valid_test"."test_idx";'),
                     (acct_id,ChalService.STATE_AC,[2]))
             if cur.rowcount != 1:
                 self.finish('Unknown')
