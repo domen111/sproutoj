@@ -202,6 +202,7 @@ class ProService:
 
         yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
         self.rs.delete('prolist')
+
         return (None,pro_id)
 
     def update_pro(self,pro_id,name,status,clas,expire,pack_token = None):

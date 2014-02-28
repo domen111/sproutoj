@@ -5,6 +5,7 @@ import datetime
 from req import RequestHandler
 from req import reqenv
 from user import UserService
+from user import UserConst
 from pack import PackService
 from pro import ProService
 from chal import ChalService
@@ -42,7 +43,8 @@ class ManageHandler(RequestHandler):
             return
 
         elif page == 'acct':
-            err,acctlist = yield from UserService.inst.list_acct(True)
+            err,acctlist = yield from UserService.inst.list_acct(
+                    UserConst.ACCTTYPE_KERNEL,True)
 
             self.render('manage-acct',page = page,acctlist = acctlist)
             return

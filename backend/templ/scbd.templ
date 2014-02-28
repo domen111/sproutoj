@@ -1,4 +1,5 @@
 {% from chal import ChalConst %}
+{% from rate import LEVEL_NAME %}
 
 <link rel="stylesheet" type="text/css" href="/oj/scbd.css">
 
@@ -6,21 +7,34 @@
 </script>
 
 <div class="g-lg-12">
-    <div style="width:100%; overflow-x:scroll;"><table style="width:{{ 192 + len(prolist) * 64 }}px;">
+    <h3>Algorithm 段位認定者一覧</h3>
+    <div style="width:100%; margin-bottom:64px; overflow-x:scroll;"><table style="width:{{ 192 + 96 + len(prolist) * 64 }}px;">
         <thead style="overflow-y:scroll; display:block;">
             <tr>
-                <th style="width:160px;">Algorithm</th>
+                <th style="width:160px;">Name</th>
+                <th style="width:96px;">Rate</th>
             {% for pro in prolist %}
                 <th class="pro" style="width:64px;">{{ pro['pro_id'] }}</th>
             {% end %}
             </tr>
         </thead>
-        <tbody style="height:800px; overflow-y:scroll; display:block;">
+        <tbody style="height:600px; overflow-y:scroll; display:block;">
+        {% set last = -1 %}
+
         {% for acct in acctlist %}
         {% if acct['class'] == 2 %}
         {% set acct_id = acct['acct_id'] %}
+
+        {% if acct['level'] != last %}
+        {% set last = acct['level'] %}
+            <tr class="level">
+                <td colspan={{2 + len(prolist) }} >{{ LEVEL_NAME[last] }}</td>
+            </tr>
+        {% end %}
+
             <tr>
                 <td style="width:160px;">{{ acct['name'] }}</td>
+                <td style="width:96px;">{{ acct['rate'] }}</td>
             {% for pro in prolist %}
             {% set pro_id = pro['pro_id'] %}
             {% if acct_id in statemap and pro_id in statemap[acct_id] %}
@@ -35,21 +49,34 @@
         </tbody>
     </table></div>
     
-    <div style="width:100%; overflow-x:scroll;"><table style="width:{{ 192 + len(prolist) * 64 }}px;">
+    <h3>Language 段位認定者一覧</h3>
+    <div style="width:100%; overflow-x:scroll;"><table style="width:{{ 192 + 96 + len(prolist) * 64 }}px;">
         <thead style="overflow-y:scroll; display:block;">
             <tr>
-                <th style="width:160px;">Language</th>
+                <th style="width:160px;">Name</th>
+                <th style="width:96px;">Rate</th>
             {% for pro in prolist %}
                 <th class="pro" style="width:64px;">{{ pro['pro_id'] }}</th>
             {% end %}
             </tr>
         </thead>
-        <tbody style="height:800px; overflow-y:scroll; display:block;">
+        <tbody style="height:600px; overflow-y:scroll; display:block;">
+        {% set last = -1 %}
+
         {% for acct in acctlist %}
         {% if acct['class'] == 1 %}
         {% set acct_id = acct['acct_id'] %}
+
+        {% if acct['level'] != last %}
+        {% set last = acct['level'] %}
+            <tr class="level">
+                <td colspan={{2 + len(prolist) }} >{{ LEVEL_NAME[last] }}</td>
+            </tr>
+        {% end %}
+
             <tr>
                 <td style="width:160px;">{{ acct['name'] }}</td>
+                <td style="width:96px;">{{ acct['rate'] }}</td>
             {% for pro in prolist %}
             {% set pro_id = pro['pro_id'] %}
             {% if acct_id in statemap and pro_id in statemap[acct_id] %}
@@ -62,5 +89,4 @@
         {% end %}
         {% end %}
         </tbody>
-    </table></div>
-</div>
+    </table></div></div>

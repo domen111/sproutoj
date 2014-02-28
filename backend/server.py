@@ -118,8 +118,7 @@ if __name__ == '__main__':
     }
     app = tornado.web.Application([
         ('/index',IndexHandler,args),
-        ('/rate',RateHandler,args),
-        ('/scbd',ScbdHandler,args),
+        ('/rate',ScbdHandler,args),
         ('/sign',SignHandler,args),
         ('/acct/(\d+)',AcctHandler,args),
         ('/acct',AcctHandler,args),

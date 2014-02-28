@@ -84,6 +84,7 @@ class UserService:
         if cur.rowcount != 1:
             return ('Eunk',None)
 
+        self.rs.delete('acctlist')
         return (None,cur.fetchone()[0])
 
     def info_sign(self,req):
@@ -170,8 +171,9 @@ class UserService:
         if cur.rowcount != 1:
             return ('Enoext',None)
 
-        self.rs.delete('account@%d'%acct_id)
         yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
+        self.rs.delete('account@%d'%acct_id)
+        self.rs.delete('acctlist')
 
         return (None,None)
 
@@ -199,23 +201,34 @@ class UserService:
 
         return (None,None)
 
-    def list_acct(self,mail = False):
-        cur = yield self.db.cursor()
-        yield cur.execute(('SELECT "acct_id","acct_type","name","mail","class" '
-            'FROM "account" ORDER BY "acct_id" ASC;'))
+    def list_acct(self,min_type = UserConst.ACCTTYPE_USER,private = False):
+        field = '%d|%d'%(min_type,private)
+        acctlist = self.rs.hget('acctlist',field)
+        if acctlist != None:
+            acctlist = json.loads(acctlist.decode('utf-8'))
 
-        acctlist = []
-        for acct_id,acct_type,name,mail,clas in cur:
-            acctlist.append({
-                'acct_id':acct_id,
-                'acct_type':acct_type,
-                'name':name,
-                'mail':mail,
-                'class':clas[0]
-            })
+        else:
+            cur = yield self.db.cursor()
+            yield cur.execute(('SELECT "acct_id","acct_type",'
+                '"name","mail",''"class" '
+                'FROM "account" WHERE "acct_type" >= %s '
+                'ORDER BY "acct_id" ASC;'),
+                (min_type,))
 
-        if mail == False:
-            for acct in acctlist:
-                del acct['mail']
+            acctlist = []
+            for acct_id,acct_type,name,mail,clas in cur:
+                acct = {
+                    'acct_id':acct_id,
+                    'acct_type':acct_type,
+                    'name':name,
+                    'class':clas[0]
+                }
+
+                if private == True:
+                    acct['mail'] = mail
+
+                acctlist.append(acct)
+
+            self.rs.hset('acctlist',field,json.dumps(acctlist))
 
         return (None,acctlist)

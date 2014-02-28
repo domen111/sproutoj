@@ -6,6 +6,30 @@ from req import RequestHandler
 from req import reqenv
 from req import Service
 
+LEVEL_GAP = list()
+for i in range(0,8):
+    LEVEL_GAP.append(1.3 * 0.38 * i / 8)
+
+for i in range(0,6):
+    LEVEL_GAP.append(1.3 * 0.38 + (1.3 * 0.62 * i / 11))
+
+LEVEL_NAME = [
+    '無',
+    '七級',
+    '六級',
+    '五級',
+    '四級',
+    '三級',
+    '二級',
+    '一級',
+    '初段',
+    '二段',
+    '三段',
+    '四段',
+    '五段',
+    '六段'
+]
+
 class RateService:
     def __init__(self,db,rs):
         self.db = db
@@ -13,18 +37,6 @@ class RateService:
 
     def list_rate(self):
         cur = yield self.db.cursor()
-        yield cur.execute(('SELECT "acct_id","name","class" FROM "account" '
-            'WHERE "acct_type" = %s;'),
-            (UserConst.ACCTTYPE_USER,))
-
-        acctlist = list()
-        for acct_id,name,clas in cur:
-            acctlist.append({
-                'acct_id':acct_id,
-                'name':name,
-                'class':clas[0]
-            })
-
         yield cur.execute(('SELECT "sum"."acct_id",SUM("sum"."rate") FROM ('
             '    SELECT "challenge"."acct_id","challenge"."pro_id",'
             '    MAX("challenge_state"."rate" * '
@@ -84,6 +96,7 @@ class RateService:
         for acct_id,pro_id,weight in cur:
             ratemap[acct_id] += promap[pro_id] * float(weight)
 
+        err,acctlist = yield from Service.Acct.list_acct()
         for acct in acctlist:
             acct_id = acct['acct_id']
             if acct_id in ratemap:
@@ -125,24 +138,54 @@ class RateHandler(RequestHandler):
         return
 
 class ScbdHandler(RequestHandler):
+    def _get_level(self,ratio):
+        l = 0
+        r = len(LEVEL_GAP) - 1
+        level = 0
+
+        while l <= r:
+            mid = (l + r) // 2
+            if ratio < LEVEL_GAP[mid]:
+                r = mid - 1
+
+            else:
+                level = mid
+                l = mid + 1
+
+        return level
+
     @reqenv
     def get(self):
-        cur = yield self.db.cursor()
-        yield cur.execute(('SELECT "acct_id","name","class" FROM "account" '
-            'WHERE "acct_type" = %s;'),
-            (UserConst.ACCTTYPE_USER,))
-
-        acctlist = list()
-        for acct_id,name,clas in cur:
-            acctlist.append({
-                'acct_id':acct_id,
-                'name':name,
-                'class':clas[0]
-            })
-
-        err,acctlist = yield from Service.Acct.list_acct()
+        err,acctlist = yield from Service.Rate.list_rate()
         err,prolist = yield from Service.Pro.list_pro()
         err,statemap = yield from Service.Rate.list_state()
+
+        cur = yield self.db.cursor()
+        yield cur.execute(('select '
+                '"account"."acct_id",'
+                'sum("test_valid_rate"."rate") AS "rate" '
+                'from "test_valid_rate" '
+                'join "problem" '
+                'on "test_valid_rate"."pro_id" = "problem"."pro_id" '
+                'join "account" '
+                'on "problem"."class" && "account"."class" '
+                'where "account"."acct_type" = %s '
+                'and "problem"."status" = %s '
+                'group by "account"."acct_id";'),
+                (UserConst.ACCTTYPE_USER,ProConst.STATUS_ONLINE))
+
+        fullmap = {}
+        for acct_id,rate in cur:
+            fullmap[acct_id] = rate
+
+        for acct in acctlist:
+            acct_id = acct['acct_id']
+            if acct_id in fullmap:
+                fullrate = fullmap[acct_id]
+                acct['level'] = self._get_level(acct['rate'] / fullrate)
+
+            else:
+                acct['level'] = None
 
         self.render('scbd',
                 acctlist = acctlist,
