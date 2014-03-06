@@ -1,45 +1,69 @@
+import json
 import types
+import datetime
 import tornado.template
 import tornado.gen
 import tornado.web
 import tornado.websocket
 
-from user import UserService
+from user import UserConst
+
+class Service:
+    pass
 
 class RequestHandler(tornado.web.RequestHandler):
     def __init__(self,*args,**kwargs):
         self.db = kwargs.pop('db')
         self.mc = kwargs.pop('mc')
+        self.rs = kwargs.pop('rs')
 
         super().__init__(*args,**kwargs)
+
+        try:
+            self.get_argument('json')
+            self.res_json = True
+
+        except tornado.web.HTTPError:
+            self.res_json = False
         
     def render(self,templ,**kwargs):
+        class _encoder(json.JSONEncoder):
+            def default(self,obj):
+                if isinstance(obj,datetime.datetime):
+                    return obj.isoformat()
+
+                else:
+                    return json.JSONEncoder.default(self,obj)
+
         tpldr = tornado.template.Loader('templ')
 
-        if self.acct['acct_id'] != UserService.ACCTID_GUEST:
+        if self.acct['acct_id'] != UserConst.ACCTID_GUEST:
             kwargs['acct_id'] = self.acct['acct_id']
         
         else:
             kwargs['acct_id'] = ''
 
-        self.finish(tpldr.load(templ + '.templ').generate(**kwargs))
+        if self.res_json == True:
+            self.finish(json.dumps(kwargs,cls = _encoder))
+
+        else:
+            self.finish(tpldr.load(templ + '.templ').generate(**kwargs))
+
         return
+
+class WebSocketHandler(tornado.websocket.WebSocketHandler):
+    def __init__(self,*args,**kwargs):
+        self.db = kwargs.pop('db')
+        self.mc = kwargs.pop('mc')
+        self.rs = kwargs.pop('rs')
+
+        super().__init__(*args,**kwargs)
 
 def reqenv(func):
     @tornado.gen.coroutine
     def wrap(self,*args,**kwargs):
-        err,acct_id = yield from UserService.inst.getsign(self)
-        if err == None:
-            err,acct = yield from UserService.inst.getinfo(acct_id)
-            self.acct = acct
-
-        else:
-            self.acct = {
-                'acct_id':0,
-                'acct_type':UserService.ACCTTYPE_USER,
-                'mail':'',
-                'name':''
-            }
+        err,acct_id = yield from Service.Acct.info_sign(self)
+        err,self.acct = yield from Service.Acct.info_acct(acct_id)
 
         ret = func(self,*args,**kwargs)
         if isinstance(ret,types.GeneratorType):
@@ -48,10 +72,3 @@ def reqenv(func):
         return ret
 
     return wrap
-
-class WebSocketHandler(tornado.websocket.WebSocketHandler):
-    def __init__(self,*args,**kwargs):
-        self.db = kwargs.pop('db')
-        self.mc = kwargs.pop('mc')
-
-        super().__init__(*args,**kwargs)

@@ -5,6 +5,27 @@ from tornado.websocket import websocket_connect
 
 from user import UserService
 
+class ChalConst:
+    STATE_AC = 1
+    STATE_WA = 2
+    STATE_RE = 3
+    STATE_TLE = 4
+    STATE_MLE = 5
+    STATE_CE = 6
+    STATE_ERR = 7
+    STATE_JUDGE = 100
+
+    STATE_STR = {
+        STATE_AC:'AC',
+        STATE_WA:'WA',
+        STATE_RE:'RE',
+        STATE_TLE:'TLE',
+        STATE_MLE:'MLE',
+        STATE_CE:'CE',
+        STATE_ERR:'IE',
+        STATE_JUDGE:'JDG',
+    }
+
 class ChalService:
     STATE_AC = 1
     STATE_WA = 2
@@ -16,7 +37,7 @@ class ChalService:
     STATE_JUDGE = 100
 
     STATE_STR = {
-        STATE_AC:'Solved',        
+        STATE_AC:'Accepted',
         STATE_WA:'Wrong Answer',
         STATE_RE:'Runtime Error',
         STATE_TLE:'Time Limit Exceed',
@@ -59,8 +80,8 @@ class ChalService:
         yield cur.execute('DELETE FROM "test" WHERE "chal_id" = %s;',
                 (chal_id,))
 
-        cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
-        cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
+        yield cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
+        yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
 
         return (None,None)
 
@@ -92,8 +113,8 @@ class ChalService:
             testl.append({
                 'test_idx':test_idx,
                 'state':state,
-                'runtime':runtime,
-                'memory':memory,
+                'runtime':int(runtime),
+                'memory':int(memory),
             })
         
         if (acct['acct_id'] == acct_id or
@@ -143,7 +164,7 @@ class ChalService:
                 (chal_id,acct_id,pro_id,test_idx,
                     ChalService.STATE_JUDGE,timestamp))
 
-        cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
+        yield cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
 
         if self.ws == None:
             self.ws = yield websocket_connect('ws://localhost:2501/judge')
@@ -189,9 +210,13 @@ class ChalService:
 
             if runtime == None:
                 runtime = 0
+            else:
+                runtime = int(runtime)
 
             if memory == None:
                 memory = 0
+            else:
+                memory = int(memory)
 
             challist.append({
                 'chal_id':chal_id,
@@ -235,10 +260,8 @@ class ChalService:
         if cur.rowcount != 1:
             return ('Enoext',None)
 
-        cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
-
-        if state == ChalService.STATE_AC:
-            cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
+        yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
+        yield cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
 
         return (None,None)
 
@@ -263,6 +286,7 @@ class ChalService:
         while True:
             ret = yield self.ws.read_message()
             if ret == None:
+                print('test')
                 break
 
             res = json.loads(ret,'utf-8')

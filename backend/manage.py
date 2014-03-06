@@ -5,6 +5,7 @@ import datetime
 from req import RequestHandler
 from req import reqenv
 from user import UserService
+from user import UserConst
 from pack import PackService
 from pro import ProService
 from chal import ChalService
@@ -42,7 +43,8 @@ class ManageHandler(RequestHandler):
             return
 
         elif page == 'acct':
-            err,acctlist = yield from UserService.inst.list_acct()
+            err,acctlist = yield from UserService.inst.list_acct(
+                    UserConst.ACCTTYPE_KERNEL,True)
 
             self.render('manage-acct',page = page,acctlist = acctlist)
             return
@@ -173,7 +175,7 @@ class ManageHandler(RequestHandler):
                     return
 
                 err,ret = yield from UserService.inst.update_acct(acct_id,
-                        acct_type,clas,acct['name'])
+                        acct_type,clas,acct['name'],acct['photo'],acct['cover'])
                 if err:
                     self.finish(err)
                     return

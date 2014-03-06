@@ -5,4 +5,6 @@ default:
 	lessc -x proset.less proset.css
 	lessc -x pro.less pro.css
 	lessc -x submit.less submit.css
+	lessc -x acct.less acct.css
+	lessc -x scbd.less scbd.css
 	lessc -x manage-pro.less manage-pro.css

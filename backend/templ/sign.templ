@@ -86,10 +86,8 @@
 
 		    $('#signup div.print').print(msg);
                 }else{
-		    $($.find('#signup div.print')[0]).print(
-			    'Success, reloading...',true);
-
-		    location.href = '/oj/info/';
+		    $('#signup div.print').print('Success, reloading...',true);
+		    index.go('/oj/info/');
                 }
             });
         });
