@@ -78,6 +78,7 @@ class AcctHandler(RequestHandler):
             if extrate == None:
                 extrate = 0
 
+        '''
         yield cur.execute(('SELECT '
             '"pro_rank"."pro_id",'
             '(0.3 * power(0.66,("pro_rank"."rank" - 1))) AS "weight" FROM ('
@@ -107,22 +108,18 @@ class AcctHandler(RequestHandler):
         for pro_id,weight in cur:
             weightmap[pro_id] = float(weight)
 
-        err,prolist = yield from ProService.inst.list_pro(acct)
-        if err:
-            self.finish(err)
-            return
-
         bonus = 0
         for pro in prolist:
             pro_id = pro['pro_id']
             if pro_id in weightmap:
                 bonus += pro['rate'] * weightmap[pro_id]
+        '''
 
         self.render('acct',
                 acct = acct,
                 rate = math.floor(rate),
-                extrate = math.floor(extrate),
-                bonus = math.floor(bonus))
+                extrate = math.floor(extrate))
+
         return
 
     @reqenv

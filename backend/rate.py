@@ -70,6 +70,7 @@ class RateService:
         for acct_id,rate in cur:
             ratemap[acct_id] = rate
 
+        '''
         yield cur.execute(('SELECT "rank"."acct_id","rank"."pro_id",'
             '(0.3 * power(0.66,("rank"."rank" - 1))) AS "weight" FROM ('
             '    SELECT "challenge"."acct_id","challenge"."pro_id",'
@@ -90,15 +91,16 @@ class RateService:
             '    GROUP BY "challenge"."acct_id","challenge"."pro_id"'
             ') AS "rank" WHERE "rank"."rank" < 17;'),
             (UserConst.ACCTTYPE_USER,ProConst.STATUS_ONLINE))
-        
-        err,prolist = yield from Service.Pro.list_pro()
-        promap = {}
-        for pro in prolist:
-            promap[pro['pro_id']] = pro['rate']
 
         bonusmap = {}
         for acct_id,pro_id,weight in cur:
             ratemap[acct_id] += promap[pro_id] * float(weight)
+        '''
+     
+        err,prolist = yield from Service.Pro.list_pro()
+        promap = {}
+        for pro in prolist:
+            promap[pro['pro_id']] = pro['rate']
 
         err,acctlist = yield from Service.Acct.list_acct()
         for acct in acctlist:
