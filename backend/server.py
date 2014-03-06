@@ -50,6 +50,11 @@ class IndexHandler(RequestHandler):
         self.render('index',name = name,manage = manage)
         return
 
+class InfoHandler(RequestHandler):
+    @reqenv
+    def get(self):
+        self.render('info')
+
 class SignHandler(RequestHandler):
     @reqenv
     def get(self):
@@ -118,6 +123,7 @@ if __name__ == '__main__':
     }
     app = tornado.web.Application([
         ('/index',IndexHandler,args),
+        ('/info',InfoHandler,args),
         ('/rate',ScbdHandler,args),
         ('/sign',SignHandler,args),
         ('/acct/(\d+)',AcctHandler,args),

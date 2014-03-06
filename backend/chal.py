@@ -260,10 +260,8 @@ class ChalService:
         if cur.rowcount != 1:
             return ('Enoext',None)
 
+        yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
         yield cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
-
-        if state == ChalService.STATE_AC:
-            yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
 
         return (None,None)
 

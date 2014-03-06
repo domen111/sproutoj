@@ -331,9 +331,8 @@ CREATE RULE "_RETURN" AS
         END * (test_config.weight)::double precision) / (100)::double precision)))::integer AS rate
    FROM (((test
    JOIN account ON ((test.acct_id = account.acct_id)))
-   JOIN problem ON (((test.pro_id = problem.pro_id) AND (account.class && problem.class))))
+   JOIN problem ON (((((test.pro_id = problem.pro_id) AND (account.class && problem.class)) AND (test.state = 1)) AND (age(test."timestamp", problem.expire) < '7 days'::interval))))
    RIGHT JOIN test_config ON (((test.pro_id = test_config.pro_id) AND (test.test_idx = test_config.test_idx))))
-  WHERE ((test.state IS NULL) OR ((test.state = 1) AND (age(test."timestamp", problem.expire) < '7 days'::interval)))
   GROUP BY test_config.pro_id, test_config.test_idx;
 
 

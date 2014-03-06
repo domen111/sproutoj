@@ -10,7 +10,7 @@ class UserConst:
     MAIL_MIN = 1
     PW_MAX = 1024
     PW_MIN = 1
-    NAME_MAX = 32
+    NAME_MAX = 8
     NAME_MIN = 1
 
     ACCTTYPE_KERNEL = 0
@@ -55,17 +55,17 @@ class UserService:
         return ('Esign',None)
 
     def sign_up(self,mail,pw,name):
-        if len(mail) < UserService.MAIL_MIN:
+        if len(mail) < UserConst.MAIL_MIN:
             return ('Emailmin',None)
-        if len(mail) > UserService.MAIL_MAX:
+        if len(mail) > UserConst.MAIL_MAX:
             return ('Emailmax',None)
-        if len(pw) < UserService.PW_MIN:
+        if len(pw) < UserConst.PW_MIN:
             return ('Epwmin',None)
-        if len(pw) > UserService.PW_MAX:
+        if len(pw) > UserConst.PW_MAX:
             return ('Epwmax',None)
-        if len(name) < UserService.NAME_MIN:
+        if len(name) < UserConst.NAME_MIN:
             return ('Enamemin',None)
-        if len(name) > UserService.NAME_MAX:
+        if len(name) > UserConst.NAME_MAX:
             return ('Enamemax',None)
 
         hpw = bcrypt.hashpw(pw.encode('utf-8'),bcrypt.gensalt(12))
@@ -76,7 +76,7 @@ class UserService:
                 '("mail","password","name","acct_type") '
                 'VALUES (%s,%s,%s,%s) RETURNING "acct_id";'),
                 (mail,base64.b64encode(hpw).decode('utf-8'),name,
-                    UserService.ACCTTYPE_USER))
+                    UserConst.ACCTTYPE_USER))
 
         except psycopg2.IntegrityError:
             return ('Eexist',None)
@@ -109,7 +109,7 @@ class UserService:
         if acct_id == None:
             return (None,{
                 'acct_id':0,
-                'acct_type':UserService.ACCTTYPE_USER,
+                'acct_type':UserConst.ACCTTYPE_USER,
                 'class':0,
                 'name':'',
                 'photo':'',
@@ -153,13 +153,13 @@ class UserService:
 
     def update_acct(self,acct_id,acct_type,clas,name,photo,cover):
         if (acct_type not in
-                [UserService.ACCTTYPE_KERNEL,UserService.ACCTTYPE_USER]):
+                [UserConst.ACCTTYPE_KERNEL,UserConst.ACCTTYPE_USER]):
             return ('Eparam',None)
         if clas not in [0,1,2]:
             return ('Eparam',None)
-        if len(name) < UserService.NAME_MIN:
+        if len(name) < UserConst.NAME_MIN:
             return ('Enamemin',None)
-        if len(name) > UserService.NAME_MAX:
+        if len(name) > UserConst.NAME_MAX:
             return ('Enamemax',None)
 
         cur = yield self.db.cursor()
@@ -178,9 +178,9 @@ class UserService:
         return (None,None)
 
     def update_pw(self,acct_id,old,pw):
-        if len(pw) < UserService.PW_MIN:
+        if len(pw) < UserConst.PW_MIN:
             return ('Epwmin',None)
-        if len(pw) > UserService.PW_MAX:
+        if len(pw) > UserConst.PW_MAX:
             return ('Epwmax',None)
 
         cur = yield self.db.cursor()

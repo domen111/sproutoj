@@ -7,11 +7,11 @@
 </script>
 
 <div class="g-lg-12">
-    <h3>Algorithm 段位認定者一覧</h3>
-    <div style="width:100%; margin-bottom:64px; overflow-x:scroll;"><table style="width:{{ 192 + 96 + len(prolist) * 64 }}px;">
+    <h3>Algorithm SP段位認定者一覧</h3>
+    <div style="width:100%; margin-bottom:48px; overflow-x:scroll;"><table style="width:{{ 224 + 96 + len(prolist) * 64 }}px;">
         <thead style="overflow-y:scroll; display:block;">
             <tr>
-                <th style="width:160px;">Name</th>
+                <th style="width:192px;">Name</th>
                 <th style="width:96px;">Rate</th>
             {% for pro in prolist %}
                 <th class="pro" style="width:64px;">{{ pro['pro_id'] }}</th>
@@ -33,7 +33,7 @@
         {% end %}
 
             <tr>
-                <td style="width:160px;">{{ acct['name'] }}</td>
+                <td style="width:192px;"><a href="/oj/acct/{{ acct['acct_id'] }}/">{{ acct['name'] }}</a></td>
                 <td style="width:96px;">{{ acct['rate'] }}</td>
             {% for pro in prolist %}
             {% set pro_id = pro['pro_id'] %}
@@ -49,11 +49,11 @@
         </tbody>
     </table></div>
     
-    <h3>Language 段位認定者一覧</h3>
-    <div style="width:100%; overflow-x:scroll;"><table style="width:{{ 192 + 96 + len(prolist) * 64 }}px;">
+    <h3>Language SP段位認定者一覧</h3>
+    <div style="width:100%; overflow-x:scroll;"><table style="width:{{ 224 + 96 + len(prolist) * 64 }}px;">
         <thead style="overflow-y:scroll; display:block;">
             <tr>
-                <th style="width:160px;">Name</th>
+                <th style="width:192px;">Name</th>
                 <th style="width:96px;">Rate</th>
             {% for pro in prolist %}
                 <th class="pro" style="width:64px;">{{ pro['pro_id'] }}</th>
@@ -75,7 +75,7 @@
         {% end %}
 
             <tr>
-                <td style="width:160px;">{{ acct['name'] }}</td>
+                <td style="width:192px;"><a href="/oj/acct/{{ acct['acct_id'] }}/">{{ acct['name'] }}</a></td>
                 <td style="width:96px;">{{ acct['rate'] }}</td>
             {% for pro in prolist %}
             {% set pro_id = pro['pro_id'] %}
