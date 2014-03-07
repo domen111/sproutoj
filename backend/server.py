@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
     Service.Acct = UserService(db,rs)
     Service.Pro = ProService(db,rs)
-    Service.Chal = ChalService(db,mc)
+    Service.Chal = ChalService(db,rs)
     Service.Rate = RateService(db,rs)
     Service.Pack = PackService(db,mc)
 
