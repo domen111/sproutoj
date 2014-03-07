@@ -1,4 +1,4 @@
-import json
+import msgpack
 import math
 
 from user import UserConst
@@ -13,8 +13,6 @@ for i in range(0,8):
 
 for i in range(0,7):
     LEVEL_GAP.append(1.3 * 0.38 + (1.3 * 0.62 * i / 11))
-
-print(LEVEL_GAP)
 
 LEVEL_NAME = [
     '無',
@@ -42,10 +40,10 @@ class RateService:
 
     def list_rate(self):
         data = self.rs.hgetall('rate')
-        if data != None:
+        if len(data) > 0:
             acctlist = list()
             for acct in data.values():
-                acctlist.append(json.loads(acct.decode('utf-8')))
+                acctlist.append(msgpack.unpackb(acct,encoding = 'utf-8'))
 
             acctlist.sort(key = lambda acct : acct['rate'],reverse = True)
             return (None,acctlist)
@@ -125,7 +123,7 @@ class RateService:
 
         pipe = self.rs.pipeline()
         for acct in acctlist:
-            pipe.hset('rate',acct['acct_id'],json.dumps(acct))
+            pipe.hset('rate',acct['acct_id'],msgpack.packb(acct))
 
         pipe.execute()
 

@@ -1,5 +1,6 @@
 import os
 import json
+import msgpack
 import math
 import datetime
 import tornado.process
@@ -79,13 +80,11 @@ class ProService:
         })
 
     def list_pro(self,acct = None,state = False,clas = None):
-        class _encoder(json.JSONEncoder):
-            def default(self,obj):
-                if isinstance(obj,datetime.datetime):
-                    return obj.astimezone(datetime.timezone.utc).timestamp()
+        def _mp_encoder(obj):
+            if isinstance(obj,datetime.datetime):
+                return obj.astimezone(datetime.timezone.utc).timestamp()
 
-                else:
-                    return json.JSONEncoder.default(self,obj)
+            return obj
 
         if acct == None:
             max_status = ProService.STATUS_ONLINE
@@ -122,7 +121,7 @@ class ProService:
         field = '%d|%s'%(max_status,str(clas))
         prolist = self.rs.hget('prolist',field)
         if prolist != None:
-            prolist = json.loads(prolist.decode('utf-8'))
+            prolist = msgpack.unpackb(prolist,encoding = 'utf-8')
             for pro in prolist:
                 expire = pro['expire']
                 if expire != None:
@@ -160,7 +159,8 @@ class ProService:
                     'rate':rate,
                 })
 
-            self.rs.hset('prolist',field,json.dumps(prolist,cls = _encoder))
+            self.rs.hset('prolist',field,msgpack.packb(prolist,
+                default = _mp_encoder))
 
         for pro in prolist:
             pro_id = pro['pro_id']

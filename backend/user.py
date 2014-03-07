@@ -1,4 +1,4 @@
-import json
+import msgpack
 import base64
 import bcrypt
 import psycopg2
@@ -118,7 +118,7 @@ class UserService:
 
         acct = self.rs.get('account@%d'%acct_id)
         if acct != None:
-            acct = json.loads(acct.decode('utf-8'))
+            acct = msgpack.unpackb(acct,encoding = 'utf-8')
 
         else:
             cur = yield self.db.cursor()
@@ -140,7 +140,7 @@ class UserService:
                 'cover':cover
             }
 
-            self.rs.setnx('account@%d'%acct_id,json.dumps(acct))
+            self.rs.setnx('account@%d'%acct_id,msgpack.packb(acct))
 
         return (None,{
             'acct_id':acct['acct_id'],
@@ -174,6 +174,7 @@ class UserService:
         yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
         self.rs.delete('account@%d'%acct_id)
         self.rs.delete('acctlist')
+        self.rs.delete('rate')
 
         return (None,None)
 
@@ -205,7 +206,7 @@ class UserService:
         field = '%d|%d'%(min_type,private)
         acctlist = self.rs.hget('acctlist',field)
         if acctlist != None:
-            acctlist = json.loads(acctlist.decode('utf-8'))
+            acctlist = msgpack.unpackb(acctlist,encoding = 'utf-8')
 
         else:
             cur = yield self.db.cursor()
@@ -229,6 +230,6 @@ class UserService:
 
                 acctlist.append(acct)
 
-            self.rs.hset('acctlist',field,json.dumps(acctlist))
+            self.rs.hset('acctlist',field,msgpack.packb(acctlist))
 
         return (None,acctlist)

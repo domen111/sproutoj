@@ -1,4 +1,5 @@
 import json
+import msgpack
 import types
 import datetime
 import collections
@@ -36,6 +37,12 @@ class RequestHandler(tornado.web.RequestHandler):
                 else:
                     return json.JSONEncoder.default(self,obj)
 
+        def _mp_encoder(obj):
+            if isinstance(obj,datetime.datetime):
+                return obj.isoformat()
+
+            return obj
+
         if self.acct['acct_id'] != UserConst.ACCTID_GUEST:
             kwargs['acct_id'] = self.acct['acct_id']
         
@@ -46,7 +53,7 @@ class RequestHandler(tornado.web.RequestHandler):
             self.finish(json.dumps(kwargs,cls = _encoder))
 
         else:
-            key = 'render@%d'%hash(json.dumps(kwargs,cls = _encoder))
+            key = 'render@%d'%hash(msgpack.packb(kwargs,default = _mp_encoder))
             data = self.rs.get(key)
             if data == None:
                 tpldr = tornado.template.Loader('templ')
