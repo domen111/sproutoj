@@ -1,3 +1,4 @@
+import json
 import math
 
 from user import UserConst
@@ -40,6 +41,15 @@ class RateService:
         self.rs = rs
 
     def list_rate(self):
+        data = self.rs.hgetall('rate')
+        if data != None:
+            acctlist = list()
+            for acct in data.values():
+                acctlist.append(json.loads(acct.decode('utf-8')))
+
+            acctlist.sort(key = lambda acct : acct['rate'],reverse = True)
+            return (None,acctlist)
+
         cur = yield self.db.cursor()
         yield cur.execute(('SELECT "sum"."acct_id",SUM("sum"."rate") FROM ('
             '    SELECT "challenge"."acct_id","challenge"."pro_id",'
@@ -112,6 +122,13 @@ class RateService:
                 acct['rate'] = 0
 
         acctlist.sort(key = lambda acct : acct['rate'],reverse = True)
+
+        pipe = self.rs.pipeline()
+        for acct in acctlist:
+            pipe.hset('rate',acct['acct_id'],json.dumps(acct))
+
+        pipe.execute()
+
         return (None,acctlist)
 
     def list_state(self):
@@ -129,7 +146,7 @@ class RateService:
                 statemap[acct_id] = {}
             
             statemap[acct_id][pro_id] = state
-
+        
         return (None,statemap)
 
 class RateHandler(RequestHandler):

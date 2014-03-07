@@ -82,7 +82,7 @@ class ProService:
         class _encoder(json.JSONEncoder):
             def default(self,obj):
                 if isinstance(obj,datetime.datetime):
-                    return obj.strftime('%Y-%m-%dT%H:%M:%S%z')
+                    return obj.astimezone(datetime.timezone.utc).timestamp()
 
                 else:
                     return json.JSONEncoder.default(self,obj)
@@ -126,8 +126,9 @@ class ProService:
             for pro in prolist:
                 expire = pro['expire']
                 if expire != None:
-                    expire = datetime.datetime.strptime(expire,
-                            '%Y-%m-%dT%H:%M:%S%z')
+                    expire = datetime.datetime.fromtimestamp(expire)
+                    expire.replace(tzinfo = datetime.timezone.utc).astimezone(
+                            datetime.timezone(datetime.timedelta(hours = 8)))
 
                 pro['expire'] = expire
 
@@ -202,6 +203,7 @@ class ProService:
 
         yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
         self.rs.delete('prolist')
+        self.rs.delete('rate')
 
         return (None,pro_id)
 
@@ -236,6 +238,8 @@ class ProService:
             yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
 
         self.rs.delete('prolist')
+        self.rs.delete('rate')
+
         return (None,None)
 
     def _get_acct_limit(self,acct):

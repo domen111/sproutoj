@@ -103,7 +103,7 @@ class SignHandler(RequestHandler):
 
 if __name__ == '__main__':
     httpsock = tornado.netutil.bind_sockets(6000)
-    #tornado.process.fork_processes(0)
+    tornado.process.fork_processes(2)
 
     db = pg.AsyncPG(config.DBNAME_OJ,config.DBUSER_OJ,config.DBPW_OJ,
             dbtz = '+8')
@@ -143,6 +143,4 @@ if __name__ == '__main__':
     httpsrv = tornado.httpserver.HTTPServer(app)
     httpsrv.add_sockets(httpsock)
     
-    #timer = tornado.ioloop.PeriodicCallback(_update_ratelist,30000)
-    #timer.start()
     tornado.ioloop.IOLoop.instance().start()

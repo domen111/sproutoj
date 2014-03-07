@@ -1,6 +1,7 @@
 import json
 import types
 import datetime
+import collections
 import tornado.template
 import tornado.gen
 import tornado.web
@@ -35,8 +36,6 @@ class RequestHandler(tornado.web.RequestHandler):
                 else:
                     return json.JSONEncoder.default(self,obj)
 
-        tpldr = tornado.template.Loader('templ')
-
         if self.acct['acct_id'] != UserConst.ACCTID_GUEST:
             kwargs['acct_id'] = self.acct['acct_id']
         
@@ -47,7 +46,14 @@ class RequestHandler(tornado.web.RequestHandler):
             self.finish(json.dumps(kwargs,cls = _encoder))
 
         else:
-            self.finish(tpldr.load(templ + '.templ').generate(**kwargs))
+            key = 'render@%d'%hash(json.dumps(kwargs,cls = _encoder))
+            data = self.rs.get(key)
+            if data == None:
+                tpldr = tornado.template.Loader('templ')
+                data = tpldr.load(templ + '.templ').generate(**kwargs)
+                self.rs.set(key,data,datetime.timedelta(hours = 24))
+
+            self.finish(data)
 
         return
 
