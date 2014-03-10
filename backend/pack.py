@@ -54,15 +54,15 @@ class PackHandler(WebSocketHandler):
             os.remove('tmp/%s.tar.xz'%self.pack_token)
 
 class PackService():
-    def __init__(self,db,mc):
+    def __init__(self,db,rs):
         self.db = db
-        self.mc = mc
+        self.rs = rs
 
         PackService.inst = self
 
     def gen_token(self):
         pack_token = str(uuid.uuid1())
-        yield self.mc.set('PACK_TOKEN@%s'%pack_token,0)
+        yield self.rs.set('PACK_TOKEN@%s'%pack_token,0)
 
         return (None,pack_token)
 
@@ -101,11 +101,11 @@ class PackService():
 
         pack_token = str(uuid.UUID(pack_token))
 
-        ret = yield self.mc.get('PACK_TOKEN@%s'%pack_token)
+        ret = yield self.rs.get('PACK_TOKEN@%s'%pack_token)
         if ret == None:
             callback(('Enoext',None))
 
-        yield self.mc.delete('PACK_TOKEN@%s'%pack_token)
+        yield self.rs.delete('PACK_TOKEN@%s'%pack_token)
 
         ret = yield _unpack()
         return ret

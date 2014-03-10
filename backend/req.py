@@ -16,7 +16,6 @@ class Service:
 class RequestHandler(tornado.web.RequestHandler):
     def __init__(self,*args,**kwargs):
         self.db = kwargs.pop('db')
-        self.mc = kwargs.pop('mc')
         self.rs = kwargs.pop('rs')
 
         super().__init__(*args,**kwargs)
@@ -53,7 +52,9 @@ class RequestHandler(tornado.web.RequestHandler):
             self.finish(json.dumps(kwargs,cls = _encoder))
 
         else:
-            key = 'render@%d'%hash(msgpack.packb(kwargs,default = _mp_encoder))
+            key = 'render@%d-%d'%(
+                    hash(msgpack.packb(kwargs,default = _mp_encoder)),
+                    hash(self.request.uri))
             data = self.rs.get(key)
             if data == None:
                 tpldr = tornado.template.Loader('templ')
@@ -67,7 +68,6 @@ class RequestHandler(tornado.web.RequestHandler):
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def __init__(self,*args,**kwargs):
         self.db = kwargs.pop('db')
-        self.mc = kwargs.pop('mc')
         self.rs = kwargs.pop('rs')
 
         super().__init__(*args,**kwargs)
