@@ -62,7 +62,7 @@ class PackService():
 
     def gen_token(self):
         pack_token = str(uuid.uuid1())
-        yield self.rs.set('PACK_TOKEN@%s'%pack_token,0)
+        self.rs.set('PACK_TOKEN@%s'%pack_token,0)
 
         return (None,pack_token)
 
@@ -101,11 +101,11 @@ class PackService():
 
         pack_token = str(uuid.UUID(pack_token))
 
-        ret = yield self.rs.get('PACK_TOKEN@%s'%pack_token)
+        ret = self.rs.get('PACK_TOKEN@%s'%pack_token)
         if ret == None:
             callback(('Enoext',None))
 
-        yield self.rs.delete('PACK_TOKEN@%s'%pack_token)
+        self.rs.delete('PACK_TOKEN@%s'%pack_token)
 
         ret = yield _unpack()
         return ret

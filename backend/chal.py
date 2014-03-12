@@ -291,7 +291,6 @@ class ChalService:
                 break
 
             res = json.loads(ret,'utf-8')
-            print(res)
             err,ret = yield from self.update_test(
                     res['chal_id'],
                     res['test_idx'],

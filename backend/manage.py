@@ -67,7 +67,7 @@ class ManageHandler(RequestHandler):
             reqtype = self.get_argument('reqtype')
 
             if reqtype == 'gettoken':
-                err,pack_token = yield from PackService.inst.gen_token()
+                err,pack_token = PackService.inst.gen_token()
                 self.finish(json.dumps(pack_token))
                 return
 
