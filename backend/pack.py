@@ -40,7 +40,7 @@ class PackHandler(WebSocketHandler):
 
             self.pack_token = str(uuid.UUID(hdr['pack_token']))
             self.remain = hdr['pack_size']
-            self.output = open('tmp/%s.tar.xz'%self.pack_token,'wb')
+            self.output = open('tmp/%s'%self.pack_token,'wb')
             self.state = PackHandler.STATE_DATA
 
             self.write_message('S')
@@ -51,7 +51,7 @@ class PackHandler(WebSocketHandler):
             self.output.close()
 
         if self.remain > 0:
-            os.remove('tmp/%s.tar.xz'%self.pack_token)
+            os.remove('tmp/%s'%self.pack_token)
 
 class PackService():
     def __init__(self,db,rs):
@@ -66,6 +66,29 @@ class PackService():
 
         return (None,pack_token)
 
+    def direct_copy(self,pack_token,dst):
+        pack_token = str(uuid.UUID(pack_token))
+
+        ret = self.rs.get('PACK_TOKEN@%s'%pack_token)
+        if ret == None:
+            return ('Enoext',None)
+
+        self.rs.delete('PACK_TOKEN@%s'%pack_token)
+
+        inf = open('tmp/%s'%pack_token,'rb')
+        outf = open(dst,'wb')
+        while True:
+            data = inf.read(65536)
+            if len(data) == 0:
+                break
+
+            outf.write(data)
+
+        inf.close()
+        outf.close()
+        
+        os.remove('tmp/%s'%pack_token)
+
     def unpack(self,pack_token,dst,clean = False):
         @tornado.concurrent.return_future
         def _unpack(callback):
@@ -75,14 +98,14 @@ class PackService():
 
             def __tar():
                 sub = tornado.process.Subprocess(
-                        ['/bin/tar','-Jxf','tmp/%s.tar.xz'%pack_token,'-C',dst])
+                        ['/bin/tar','-Jxf','tmp/%s'%pack_token,'-C',dst])
                 sub.set_exit_callback(__tar_cb)
 
             def __tar_cb(code):
                 if code != 0:
                     callback(('Eunk',None))
 
-                os.remove('tmp/%s.tar.xz'%pack_token)
+                os.remove('tmp/%s'%pack_token)
 
                 sub = tornado.process.Subprocess(
                         ['/bin/bash','newline.sh','%s/res/testdata'%dst])
@@ -103,7 +126,7 @@ class PackService():
 
         ret = self.rs.get('PACK_TOKEN@%s'%pack_token)
         if ret == None:
-            callback(('Enoext',None))
+            return ('Enoext',None)
 
         self.rs.delete('PACK_TOKEN@%s'%pack_token)
 

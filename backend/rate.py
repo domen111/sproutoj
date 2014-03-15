@@ -11,7 +11,7 @@ LEVEL_GAP = list()
 for i in range(0,8):
     LEVEL_GAP.append(1.3 * 0.38 * i / 8)
 
-for i in range(0,7):
+for i in range(0,8):
     LEVEL_GAP.append(1.3 * 0.38 + (1.3 * 0.62 * i / 11))
 
 LEVEL_NAME = [
@@ -30,7 +30,8 @@ LEVEL_NAME = [
     '五段',
     '七段',
     '八段',
-    '九段'
+    '九段',
+    '十段'
 ]
 
 class RateService:

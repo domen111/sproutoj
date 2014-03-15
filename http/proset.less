@@ -19,12 +19,15 @@
         height:32px;
         margin-top:8px;
 
+        & > div{
+            height:100%;
+            line-height:32px;
+        }
         & > div.state{
             color:@gray;
-
-            &.solve{
-                color:@green;
-            }
+        }
+        & > div.outdate{
+            color:@orange;
         }
 
         & .light{

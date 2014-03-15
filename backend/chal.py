@@ -264,6 +264,7 @@ class ChalService:
         yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
         yield cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
         self.rs.delete('rate')
+        self.rs.delete('prolist')
 
         return (None,None)
 

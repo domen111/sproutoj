@@ -2,18 +2,15 @@ import os
 import json
 import datetime
 
+from user import UserConst
 from req import RequestHandler
 from req import reqenv
-from user import UserService
-from user import UserConst
-from pack import PackService
-from pro import ProService
-from chal import ChalService
+from req import Service
 
 class ManageHandler(RequestHandler):
     @reqenv
     def get(self,page = 'dash'):
-        if self.acct['acct_type'] != UserService.ACCTTYPE_KERNEL:
+        if self.acct['acct_type'] != UserConst.ACCTTYPE_KERNEL:
             self.finish('Eacces')
             return
 
@@ -22,7 +19,7 @@ class ManageHandler(RequestHandler):
             return
 
         elif page == 'pro':
-            err,prolist = yield from ProService.inst.list_pro(self.acct)
+            err,prolist = yield from Service.Pro.list_pro(self.acct)
 
             self.render('manage-pro',page = page,prolist = prolist)
             return
@@ -34,7 +31,7 @@ class ManageHandler(RequestHandler):
         elif page == 'updatepro':
             pro_id = int(self.get_argument('proid'))
 
-            err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
+            err,pro = yield from Service.Pro.get_pro(pro_id,self.acct)
             if err:
                 self.finish(err)
                 return
@@ -43,7 +40,7 @@ class ManageHandler(RequestHandler):
             return
 
         elif page == 'acct':
-            err,acctlist = yield from UserService.inst.list_acct(
+            err,acctlist = yield from Service.Acct.list_acct(
                     UserConst.ACCTTYPE_KERNEL,True)
 
             self.render('manage-acct',page = page,acctlist = acctlist)
@@ -52,14 +49,14 @@ class ManageHandler(RequestHandler):
         elif page == 'updateacct':
             acct_id = int(self.get_argument('acctid'))
 
-            err,acct = yield from UserService.inst.getinfo(acct_id)
+            err,acct = yield from Service.Acct.info_acct(acct_id)
 
             self.render('manage-acct-update',page = page,acct = acct)
             return
 
     @reqenv
     def post(self,page):
-        if self.acct['acct_type'] != UserService.ACCTTYPE_KERNEL:
+        if self.acct['acct_type'] != UserConst.ACCTTYPE_KERNEL:
             self.finish('Eacces')
             return
 
@@ -67,7 +64,7 @@ class ManageHandler(RequestHandler):
             reqtype = self.get_argument('reqtype')
 
             if reqtype == 'gettoken':
-                err,pack_token = PackService.inst.gen_token()
+                err,pack_token = Service.Pack.gen_token()
                 self.finish(json.dumps(pack_token))
                 return
 
@@ -94,7 +91,7 @@ class ManageHandler(RequestHandler):
                         self.finish('Eexpire')
                         return
 
-                err,pro_id = yield from ProService.inst.add_pro(
+                err,pro_id = yield from Service.Pro.add_pro(
                         name,status,clas,expire,pack_token)
                 if err:
                     self.finish(err)
@@ -109,6 +106,7 @@ class ManageHandler(RequestHandler):
                 status = int(self.get_argument('status'))
                 clas = int(self.get_argument('class'))
                 expire = self.get_argument('expire')
+                pack_type = int(self.get_argument('pack_type'))
                 pack_token = self.get_argument('pack_token')
 
                 if expire == '':
@@ -127,8 +125,8 @@ class ManageHandler(RequestHandler):
                 if pack_token == '':
                     pack_token = None
 
-                err,ret = yield from ProService.inst.update_pro(
-                        pro_id,name,status,clas,expire,pack_token)
+                err,ret = yield from Service.Pro.update_pro(
+                        pro_id,name,status,clas,expire,pack_type,pack_token)
                 if err:
                     self.finish(err)
                     return
@@ -139,7 +137,7 @@ class ManageHandler(RequestHandler):
             elif reqtype == 'rechal':
                 pro_id = int(self.get_argument('pro_id'))
 
-                err,pro = yield from ProService.inst.get_pro(pro_id,self.acct)
+                err,pro = yield from Service.Pro.get_pro(pro_id,self.acct)
                 if err:
                     self.finish(err)
                     return
@@ -150,8 +148,8 @@ class ManageHandler(RequestHandler):
                     (pro_id,))
 
                 for chal_id, in cur:
-                    err,ret = yield from ChalService.inst.reset_chal(chal_id)
-                    err,ret = yield from ChalService.inst.emit_chal(
+                    err,ret = yield from Service.Chal.reset_chal(chal_id)
+                    err,ret = yield from Service.Chal.emit_chal(
                             chal_id,
                             pro_id,
                             pro['testm_conf'],
@@ -169,12 +167,12 @@ class ManageHandler(RequestHandler):
                 acct_type = int(self.get_argument('acct_type'))
                 clas = int(self.get_argument('class'))
 
-                err,acct = yield from UserService.inst.getinfo(acct_id)
+                err,acct = yield from Service.Acct.info_acct(acct_id)
                 if err:
                     self.finish(err)
                     return
 
-                err,ret = yield from UserService.inst.update_acct(acct_id,
+                err,ret = yield from Service.Acct.update_acct(acct_id,
                         acct_type,clas,acct['name'],acct['photo'],acct['cover'])
                 if err:
                     self.finish(err)
