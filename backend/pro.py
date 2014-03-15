@@ -1,5 +1,6 @@
 import os
 import json
+import msgpack
 import math
 import datetime
 import tornado.process
@@ -28,6 +29,10 @@ class ProService:
     STATUS_ONLINE = 0
     STATUS_HIDDEN = 1
     STATUS_OFFLINE = 2
+
+    PACKTYPE_FULL = 1
+    PACKTYPE_CONTHTML = 2
+    PACKTYPE_CONTPDF = 3
 
     def __init__(self,db,rs):
         self.db = db
@@ -79,13 +84,11 @@ class ProService:
         })
 
     def list_pro(self,acct = None,state = False,clas = None):
-        class _encoder(json.JSONEncoder):
-            def default(self,obj):
-                if isinstance(obj,datetime.datetime):
-                    return obj.strftime('%Y-%m-%dT%H:%M:%S%z')
+        def _mp_encoder(obj):
+            if isinstance(obj,datetime.datetime):
+                return obj.astimezone(datetime.timezone.utc).timestamp()
 
-                else:
-                    return json.JSONEncoder.default(self,obj)
+            return obj
 
         if acct == None:
             max_status = ProService.STATUS_ONLINE
@@ -122,12 +125,13 @@ class ProService:
         field = '%d|%s'%(max_status,str(clas))
         prolist = self.rs.hget('prolist',field)
         if prolist != None:
-            prolist = json.loads(prolist.decode('utf-8'))
+            prolist = msgpack.unpackb(prolist,encoding = 'utf-8')
             for pro in prolist:
                 expire = pro['expire']
                 if expire != None:
-                    expire = datetime.datetime.strptime(expire,
-                            '%Y-%m-%dT%H:%M:%S%z')
+                    expire = datetime.datetime.fromtimestamp(expire)
+                    expire = expire.replace(tzinfo = datetime.timezone(
+                        datetime.timedelta(hours = 8)))
 
                 pro['expire'] = expire
 
@@ -159,7 +163,11 @@ class ProService:
                     'rate':rate,
                 })
 
-            self.rs.hset('prolist',field,json.dumps(prolist,cls = _encoder))
+            self.rs.hset('prolist',field,msgpack.packb(prolist,
+                default = _mp_encoder))
+
+        now = datetime.datetime.utcnow()
+        now = now.replace(tzinfo = datetime.timezone.utc)
 
         for pro in prolist:
             pro_id = pro['pro_id']
@@ -168,6 +176,17 @@ class ProService:
 
             else:
                 pro['state'] = None
+
+            if pro['expire'] == None:
+                pro['outdate'] = False
+
+            else:
+                delta = (pro['expire'] - now).total_seconds()
+                if delta < 0:
+                    pro['outdate'] = True
+
+                else:
+                    pro['outdate'] = False
 
         return (None,prolist)
 
@@ -183,7 +202,8 @@ class ProService:
             return ('Eparam',None)
 
         if expire == None:
-            expire = datetime.datetime.max
+            expire = datetime.datetime(2099,12,31,0,0,0,0,
+                    tzinfo = datetime.timezone.utc)
 
         cur = yield self.db.cursor()
         yield cur.execute(('INSERT INTO "problem" '
@@ -202,10 +222,12 @@ class ProService:
 
         yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
         self.rs.delete('prolist')
+        self.rs.delete('rate')
 
         return (None,pro_id)
 
-    def update_pro(self,pro_id,name,status,clas,expire,pack_token = None):
+    def update_pro(self,pro_id,name,status,clas,expire,
+            pack_type,pack_token = None):
         if len(name) < ProService.NAME_MIN:
             return ('Enamemin',None)
         if len(name) > ProService.NAME_MAX:
@@ -217,7 +239,8 @@ class ProService:
             return ('Eparam',None)
 
         if expire == None:
-            expire = datetime.datetime.max
+            expire = datetime.datetime(2099,12,31,0,0,0,0,
+                    tzinfo = datetime.timezone.utc)
 
         cur = yield self.db.cursor()
         yield cur.execute(('UPDATE "problem" '
@@ -229,13 +252,15 @@ class ProService:
             return ('Enoext',None)
 
         if pack_token != None:
-            err,ret = yield from self._unpack_pro(pro_id,pack_token)
+            err,ret = yield from self._unpack_pro(pro_id,pack_type,pack_token)
             if err:
                 return (err,None)
 
             yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
 
         self.rs.delete('prolist')
+        self.rs.delete('rate')
+
         return (None,None)
 
     def _get_acct_limit(self,acct):
@@ -245,49 +270,79 @@ class ProService:
         else:
             return ProService.STATUS_ONLINE
 
-    def _unpack_pro(self,pro_id,pack_token):
-        err,ret = yield from PackService.inst.unpack(
-                pack_token,'problem/%d'%pro_id,True)
-        if err:
-            return (err,None)
+    def _unpack_pro(self,pro_id,pack_type,pack_token):
+        def _clean_cont(prefix):
+            try:
+                os.remove(prefix + 'cont.html')
 
-        try:
-            os.chmod('problem/%d'%pro_id,0o755)
-            os.symlink(os.path.abspath('problem/%d/http'%pro_id),
-                    '../http/problem/%d'%pro_id)
+            except OSError:
+                pass
+            
+            try:
+                os.remove(prefix + 'cont.pdf')
 
-        except FileExistsError:
-            pass
+            except OSError:
+                pass
 
-        try:
-            conf_f = open('problem/%d/conf.json'%pro_id)
-            conf = json.load(conf_f)
-            conf_f.close()
+        if (pack_type != ProService.PACKTYPE_FULL and
+                pack_type != ProService.PACKTYPE_CONTHTML and
+                pack_type != ProService.PACKTYPE_CONTPDF):
+            return ('Eparam',None)
 
-        except Exception:
-            return ('Econf',None)
+        if pack_type == ProService.PACKTYPE_CONTHTML:
+            prefix = 'problem/%d/http/'%pro_id
+            _clean_cont(prefix)
+            ret = PackService.inst.direct_copy(pack_token,prefix + 'cont.html')
 
-        comp_type = conf['compile']
-        score_type = conf['score']
-        check_type = conf['check']
-        timelimit = conf['timelimit']
-        memlimit = conf['memlimit'] * 1024
+        elif pack_type == ProService.PACKTYPE_CONTPDF:
+            prefix = 'problem/%d/http/'%pro_id
+            _clean_cont(prefix)
+            ret = PackService.inst.direct_copy(pack_token,prefix + 'cont.pdf')
 
-        cur = yield self.db.cursor()
-        yield cur.execute('DELETE FROM "test_config" WHERE "pro_id" = %s;',
-                (pro_id,))
+        elif pack_type == ProService.PACKTYPE_FULL:
+            err,ret = yield from PackService.inst.unpack(
+                    pack_token,'problem/%d'%pro_id,True)
+            if err:
+                return (err,None)
 
-        for test_idx,test_conf in enumerate(conf['test']):
-            metadata = {
-                'data':test_conf['data']
-            } 
-            yield cur.execute(('INSERT INTO "test_config" '
-                '("pro_id","test_idx","compile_type","score_type","check_type",'
-                '"timelimit","memlimit","weight","metadata") '
-                'VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s);'),
-                (pro_id,test_idx,comp_type,score_type,check_type,
-                    timelimit,memlimit,test_conf['weight'],
-                    json.dumps(metadata)))
+            try:
+                os.chmod('problem/%d'%pro_id,0o755)
+                os.symlink(os.path.abspath('problem/%d/http'%pro_id),
+                        '../http/problem/%d'%pro_id)
+
+            except FileExistsError:
+                pass
+
+            try:
+                conf_f = open('problem/%d/conf.json'%pro_id)
+                conf = json.load(conf_f)
+                conf_f.close()
+
+            except Exception:
+                return ('Econf',None)
+
+            comp_type = conf['compile']
+            score_type = conf['score']
+            check_type = conf['check']
+            timelimit = conf['timelimit']
+            memlimit = conf['memlimit'] * 1024
+
+            cur = yield self.db.cursor()
+            yield cur.execute('DELETE FROM "test_config" WHERE "pro_id" = %s;',
+                    (pro_id,))
+
+            for test_idx,test_conf in enumerate(conf['test']):
+                metadata = {
+                    'data':test_conf['data']
+                } 
+                yield cur.execute(('insert into "test_config" '
+                    '("pro_id","test_idx",'
+                    '"compile_type","score_type","check_type",'
+                    '"timelimit","memlimit","weight","metadata") '
+                    'values (%s,%s,%s,%s,%s,%s,%s,%s,%s);'),
+                    (pro_id,test_idx,comp_type,score_type,check_type,
+                        timelimit,memlimit,test_conf['weight'],
+                        json.dumps(metadata)))
 
         return (None,None)
 

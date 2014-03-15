@@ -1,6 +1,8 @@
 import json
+import msgpack
 import types
 import datetime
+import collections
 import tornado.template
 import tornado.gen
 import tornado.web
@@ -14,7 +16,6 @@ class Service:
 class RequestHandler(tornado.web.RequestHandler):
     def __init__(self,*args,**kwargs):
         self.db = kwargs.pop('db')
-        self.mc = kwargs.pop('mc')
         self.rs = kwargs.pop('rs')
 
         super().__init__(*args,**kwargs)
@@ -35,7 +36,11 @@ class RequestHandler(tornado.web.RequestHandler):
                 else:
                     return json.JSONEncoder.default(self,obj)
 
-        tpldr = tornado.template.Loader('templ')
+        def _mp_encoder(obj):
+            if isinstance(obj,datetime.datetime):
+                return obj.isoformat()
+
+            return obj
 
         if self.acct['acct_id'] != UserConst.ACCTID_GUEST:
             kwargs['acct_id'] = self.acct['acct_id']
@@ -47,14 +52,22 @@ class RequestHandler(tornado.web.RequestHandler):
             self.finish(json.dumps(kwargs,cls = _encoder))
 
         else:
-            self.finish(tpldr.load(templ + '.templ').generate(**kwargs))
+            key = 'render@%d-%d'%(
+                    hash(msgpack.packb(kwargs,default = _mp_encoder)),
+                    hash(self.request.uri))
+            data = self.rs.get(key)
+            if data == None:
+                tpldr = tornado.template.Loader('templ')
+                data = tpldr.load(templ + '.templ').generate(**kwargs)
+                self.rs.set(key,data,datetime.timedelta(hours = 24))
+
+            self.finish(data)
 
         return
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def __init__(self,*args,**kwargs):
         self.db = kwargs.pop('db')
-        self.mc = kwargs.pop('mc')
         self.rs = kwargs.pop('rs')
 
         super().__init__(*args,**kwargs)

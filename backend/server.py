@@ -103,22 +103,20 @@ class SignHandler(RequestHandler):
 
 if __name__ == '__main__':
     httpsock = tornado.netutil.bind_sockets(6000)
-    #tornado.process.fork_processes(0)
+    tornado.process.fork_processes(2)
 
     db = pg.AsyncPG(config.DBNAME_OJ,config.DBUSER_OJ,config.DBPW_OJ,
             dbtz = '+8')
     rs = redis.StrictRedis(host = 'localhost',port = 6379,db = 1)
-    mc = mcd.AsyncMCD()
 
     Service.Acct = UserService(db,rs)
     Service.Pro = ProService(db,rs)
-    Service.Chal = ChalService(db,mc)
+    Service.Chal = ChalService(db,rs)
     Service.Rate = RateService(db,rs)
-    Service.Pack = PackService(db,mc)
+    Service.Pack = PackService(db,rs)
 
     args = {
         'db':db,
-        'mc':mc,
         'rs':rs
     }
     app = tornado.web.Application([
@@ -143,6 +141,4 @@ if __name__ == '__main__':
     httpsrv = tornado.httpserver.HTTPServer(app)
     httpsrv.add_sockets(httpsock)
     
-    #timer = tornado.ioloop.PeriodicCallback(_update_ratelist,30000)
-    #timer.start()
     tornado.ioloop.IOLoop.instance().start()

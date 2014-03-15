@@ -1,3 +1,4 @@
+import msgpack
 import math
 
 from user import UserConst
@@ -10,10 +11,8 @@ LEVEL_GAP = list()
 for i in range(0,8):
     LEVEL_GAP.append(1.3 * 0.38 * i / 8)
 
-for i in range(0,7):
+for i in range(0,8):
     LEVEL_GAP.append(1.3 * 0.38 + (1.3 * 0.62 * i / 11))
-
-print(LEVEL_GAP)
 
 LEVEL_NAME = [
     '無',
@@ -31,7 +30,8 @@ LEVEL_NAME = [
     '五段',
     '七段',
     '八段',
-    '九段'
+    '九段',
+    '十段'
 ]
 
 class RateService:
@@ -40,6 +40,15 @@ class RateService:
         self.rs = rs
 
     def list_rate(self):
+        data = self.rs.hgetall('rate')
+        if len(data) > 0:
+            acctlist = list()
+            for acct in data.values():
+                acctlist.append(msgpack.unpackb(acct,encoding = 'utf-8'))
+
+            acctlist.sort(key = lambda acct : acct['rate'],reverse = True)
+            return (None,acctlist)
+
         cur = yield self.db.cursor()
         yield cur.execute(('SELECT "sum"."acct_id",SUM("sum"."rate") FROM ('
             '    SELECT "challenge"."acct_id","challenge"."pro_id",'
@@ -112,6 +121,13 @@ class RateService:
                 acct['rate'] = 0
 
         acctlist.sort(key = lambda acct : acct['rate'],reverse = True)
+
+        pipe = self.rs.pipeline()
+        for acct in acctlist:
+            pipe.hset('rate',acct['acct_id'],msgpack.packb(acct))
+
+        pipe.execute()
+
         return (None,acctlist)
 
     def list_state(self):
@@ -129,7 +145,7 @@ class RateService:
                 statemap[acct_id] = {}
             
             statemap[acct_id][pro_id] = state
-
+        
         return (None,statemap)
 
 class RateHandler(RequestHandler):

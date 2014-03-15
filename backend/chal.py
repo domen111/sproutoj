@@ -47,9 +47,9 @@ class ChalService:
         STATE_JUDGE:'Judging',
     }
 
-    def __init__(self,db,mc):
+    def __init__(self,db,rs):
         self.db = db
-        self.mc = mc
+        self.rs = rs
         self.ws = None
 
         self._collect_judge()
@@ -82,6 +82,7 @@ class ChalService:
 
         yield cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
         yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
+        self.rs.delete('rate')
 
         return (None,None)
 
@@ -262,6 +263,8 @@ class ChalService:
 
         yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
         yield cur.execute('REFRESH MATERIALIZED VIEW challenge_state;')
+        self.rs.delete('rate')
+        self.rs.delete('prolist')
 
         return (None,None)
 
@@ -286,7 +289,6 @@ class ChalService:
         while True:
             ret = yield self.ws.read_message()
             if ret == None:
-                print('test')
                 break
 
             res = json.loads(ret,'utf-8')

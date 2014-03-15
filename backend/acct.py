@@ -202,5 +202,3 @@ class SignHandler(RequestHandler):
             self.clear_cookie('sign',path = '/oj')
             self.finish('S')
             return
-
-
