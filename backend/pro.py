@@ -216,7 +216,7 @@ class ProService:
         
         pro_id = cur.fetchone()[0]
 
-        err,ret = yield from self._unpack_pro(pro_id,pack_token)
+        err,ret = yield from self._unpack_pro(pro_id,ProService.PACKTYPE_FULL,pack_token)
         if err:
             return (err,None)
 
