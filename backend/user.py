@@ -174,6 +174,7 @@ class UserService:
         yield cur.execute('REFRESH MATERIALIZED VIEW test_valid_rate;')
         self.rs.delete('account@%d'%acct_id)
         self.rs.delete('acctlist')
+        self.rs.delete('prolist')
         self.rs.delete('rate')
 
         return (None,None)

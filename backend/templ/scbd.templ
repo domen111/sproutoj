@@ -8,12 +8,12 @@
 
 <div class="g-lg-12">
     <h3>Algorithm SP段位認定者一覧</h3>
-    <div style="width:100%; margin-bottom:48px; overflow-x:scroll;"><table style="width:{{ 224 + 96 + len(prolist) * 64 }}px;">
+    <div style="width:100%; margin-bottom:48px; overflow-x:scroll;"><table style="width:{{ 224 + 96 + len(alglist) * 64 }}px;">
         <thead style="overflow-y:scroll; display:block;">
             <tr>
                 <th style="width:192px;">Name</th>
                 <th style="width:96px;">Rate</th>
-            {% for pro in prolist %}
+            {% for pro in alglist %}
                 <th class="pro" style="width:64px;">{{ pro['pro_id'] }}</th>
             {% end %}
             </tr>
@@ -28,14 +28,14 @@
         {% if acct['level'] != last %}
         {% set last = acct['level'] %}
             <tr class="level">
-                <td colspan={{2 + len(prolist) }} >{{ LEVEL_NAME[last] }}</td>
+                <td colspan={{2 + len(alglist) }} >{{ LEVEL_NAME[last] }}</td>
             </tr>
         {% end %}
 
             <tr>
                 <td style="width:192px;"><a href="/oj/acct/{{ acct['acct_id'] }}/">{{ acct['name'] }}</a></td>
                 <td style="width:96px;">{{ acct['rate'] }}</td>
-            {% for pro in prolist %}
+            {% for pro in alglist %}
             {% set pro_id = pro['pro_id'] %}
             {% if acct_id in statemap and pro_id in statemap[acct_id] %}
                 <td class="state state-{{ statemap[acct_id][pro_id] }}" style="width:64px;">{{ ChalConst.STATE_STR[statemap[acct_id][pro_id]] }}</td>
@@ -50,12 +50,12 @@
     </table></div>
     
     <h3>Language SP段位認定者一覧</h3>
-    <div style="width:100%; overflow-x:scroll;"><table style="width:{{ 224 + 96 + len(prolist) * 64 }}px;">
+    <div style="width:100%; overflow-x:scroll;"><table style="width:{{ 224 + 96 + len(langlist) * 64 }}px;">
         <thead style="overflow-y:scroll; display:block;">
             <tr>
                 <th style="width:192px;">Name</th>
                 <th style="width:96px;">Rate</th>
-            {% for pro in prolist %}
+            {% for pro in langlist %}
                 <th class="pro" style="width:64px;">{{ pro['pro_id'] }}</th>
             {% end %}
             </tr>
@@ -70,14 +70,14 @@
         {% if acct['level'] != last %}
         {% set last = acct['level'] %}
             <tr class="level">
-                <td colspan={{2 + len(prolist) }} >{{ LEVEL_NAME[last] }}</td>
+                <td colspan={{2 + len(langlist) }} >{{ LEVEL_NAME[last] }}</td>
             </tr>
         {% end %}
 
             <tr>
                 <td style="width:192px;"><a href="/oj/acct/{{ acct['acct_id'] }}/">{{ acct['name'] }}</a></td>
                 <td style="width:96px;">{{ acct['rate'] }}</td>
-            {% for pro in prolist %}
+            {% for pro in langlist %}
             {% set pro_id = pro['pro_id'] %}
             {% if acct_id in statemap and pro_id in statemap[acct_id] %}
                 <td class="state state-{{ statemap[acct_id][pro_id] }}" style="width:64px;">{{ ChalConst.STATE_STR[statemap[acct_id][pro_id]] }}</td>

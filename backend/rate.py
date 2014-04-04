@@ -9,10 +9,10 @@ from req import Service
 
 LEVEL_GAP = list()
 for i in range(0,8):
-    LEVEL_GAP.append(1.3 * 0.38 * i / 8)
+    LEVEL_GAP.append(1 * 0.38 * i / 8)
 
-for i in range(0,8):
-    LEVEL_GAP.append(1.3 * 0.38 + (1.3 * 0.62 * i / 11))
+for i in range(0,10):
+    LEVEL_GAP.append(1 * 0.38 + (1 * 0.62 * i / 10))
 
 LEVEL_NAME = [
     '無',
@@ -31,7 +31,8 @@ LEVEL_NAME = [
     '七段',
     '八段',
     '九段',
-    '十段'
+    '十段',
+    '★皆伝★'
 ]
 
 class RateService:
@@ -209,8 +210,19 @@ class ScbdHandler(RequestHandler):
             else:
                 acct['level'] = None
 
+        alglist = list()
+        langlist = list()
+        for pro in prolist:
+            clas = pro['class']
+            if clas == 2:
+                alglist.append(pro)
+
+            elif clas == 1:
+                langlist.append(pro)
+
         self.render('scbd',
                 acctlist = acctlist,
-                prolist = prolist,
+                alglist = alglist,
+                langlist = langlist,
                 statemap = statemap)
         return

@@ -136,22 +136,23 @@ class ProService:
                 pro['expire'] = expire
 
         else:
-            yield cur.execute(('SELECT '
+            yield cur.execute(('select '
                 '"problem"."pro_id",'
                 '"problem"."name",'
                 '"problem"."status",'
                 '"problem"."expire",'
-                'SUM("test_valid_rate"."rate") AS "rate" '
-                'FROM "problem" '
-                'INNER JOIN "test_valid_rate" '
-                'ON "test_valid_rate"."pro_id" = "problem"."pro_id" '
-                'WHERE "status" <= %s AND "class" && %s '
-                'GROUP BY "problem"."pro_id" '
-                'ORDER BY "pro_id" ASC;'),
+                '"problem"."class",'
+                'sum("test_valid_rate"."rate") as "rate" '
+                'from "problem" '
+                'inner join "test_valid_rate" '
+                'on "test_valid_rate"."pro_id" = "problem"."pro_id" '
+                'where "problem"."status" <= %s and "problem"."class" && %s '
+                'group by "problem"."pro_id" '
+                'order by "pro_id" asc;'),
                 (max_status,clas))
 
             prolist = list()
-            for pro_id,name,status,expire,rate in cur:
+            for pro_id,name,status,expire,clas,rate in cur:
                 if expire == datetime.datetime.max:
                     expire = None
 
@@ -160,6 +161,7 @@ class ProService:
                     'name':name,
                     'status':status,
                     'expire':expire,
+                    'class':clas[0],
                     'rate':rate,
                 })
 

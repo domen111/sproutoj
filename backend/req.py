@@ -54,9 +54,9 @@ class RequestHandler(tornado.web.RequestHandler):
         else:
             key = 'render@%d-%d'%(
                     hash(msgpack.packb(kwargs,default = _mp_encoder)),
-                    hash(self.request.uri))
+                    hash(self.request.path))
             data = self.rs.get(key)
-            if data == None:
+            if data == None or True:
                 tpldr = tornado.template.Loader('templ')
                 data = tpldr.load(templ + '.templ').generate(**kwargs)
                 self.rs.set(key,data,datetime.timedelta(hours = 24))
