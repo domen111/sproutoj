@@ -40,8 +40,15 @@ class RateService:
         self.db = db
         self.rs = rs
 
-    def list_rate(self):
-        data = self.rs.hgetall('rate')
+    def list_rate(self,acct = None,clas = None):
+        if acct != None and acct['acct_type'] == UserConst.ACCTTYPE_KERNEL:
+            kernel = True
+
+        else:
+            kernel = False
+        
+        key = 'rate@kernel_' + str(kernel)
+        data = self.rs.hgetall(key)
         if len(data) > 0:
             acctlist = list()
             for acct in data.values():
@@ -50,31 +57,46 @@ class RateService:
             acctlist.sort(key = lambda acct : acct['rate'],reverse = True)
             return (None,acctlist)
 
+        if kernel:
+            min_type = UserConst.ACCTTYPE_KERNEL
+            max_status = ProConst.STATUS_HIDDEN
+
+        else:
+            min_type = UserConst.ACCTTYPE_USER
+            max_status = ProConst.STATUS_ONLINE
+        
+        if clas != None:
+            qclas = [clas]
+
+        else:
+            qclas = [1,2]
+
         cur = yield self.db.cursor()
-        yield cur.execute(('SELECT "sum"."acct_id",SUM("sum"."rate") FROM ('
-            '    SELECT "challenge"."acct_id","challenge"."pro_id",'
-            '    MAX("challenge_state"."rate" * '
-            '        CASE WHEN "challenge"."timestamp" < "problem"."expire" '
-            '        THEN 1 ELSE '
-            '        (1 - (GREATEST(date_part(\'days\',justify_interval('
+        yield cur.execute(('select "sum"."acct_id",sum("sum"."rate") from ('
+            '    select "challenge"."acct_id","challenge"."pro_id",'
+            '    max("challenge_state"."rate" * '
+            '        case when "challenge"."timestamp" < "problem"."expire" '
+            '        then 1 else '
+            '        (1 - (greatest(date_part(\'days\',justify_interval('
             '        age("challenge"."timestamp","problem"."expire") '
             '        + \'1 days\')),-1)) * 0.15) '
-            '        END) '
-            '    AS "rate" '
-            '    FROM "challenge" '
-            '    INNER JOIN "problem" '
-            '    ON "challenge"."pro_id" = "problem"."pro_id" '
-            '    INNER JOIN "account" '
-            '    ON "challenge"."acct_id" = "account"."acct_id" '
-            '    INNER JOIN "challenge_state" '
-            '    ON "challenge"."chal_id" = "challenge_state"."chal_id" '
-            '    WHERE "account"."class" && "problem"."class" '
-            '    AND "account"."acct_type" = %s '
-            '    AND "problem"."status" = %s '
-            '    GROUP BY "challenge"."acct_id","challenge"."pro_id"'
-            ') AS "sum" '
-            'GROUP BY "sum"."acct_id" ORDER BY "sum"."acct_id" ASC;'),
-            (UserConst.ACCTTYPE_USER,ProConst.STATUS_ONLINE))
+            '        end) '
+            '    as "rate" '
+            '    from "challenge" '
+            '    inner join "problem" '
+            '    on "challenge"."pro_id" = "problem"."pro_id" '
+            '    inner join "account" '
+            '    on "challenge"."acct_id" = "account"."acct_id" '
+            '    inner join "challenge_state" '
+            '    on "challenge"."chal_id" = "challenge_state"."chal_id" '
+            '    where "problem"."class" && %s '
+            '    and "account"."class" && "problem"."class" '
+            '    and "account"."acct_type" >= %s '
+            '    and "problem"."status" <= %s '
+            '    group by "challenge"."acct_id","challenge"."pro_id"'
+            ') as "sum" '
+            'group by "sum"."acct_id" order by "sum"."acct_id" asc;'),
+            (qclas,min_type,max_status))
 
         ratemap = {}
         for acct_id,rate in cur:
@@ -107,13 +129,17 @@ class RateService:
             ratemap[acct_id] += promap[pro_id] * float(weight)
         '''
      
-        err,prolist = yield from Service.Pro.list_pro()
+        err,prolist = yield from Service.Pro.list_pro(acct = acct)
         promap = {}
         for pro in prolist:
             promap[pro['pro_id']] = pro['rate']
 
-        err,acctlist = yield from Service.Acct.list_acct()
-        for acct in acctlist:
+        err,tmplist = yield from Service.Acct.list_acct(min_type = min_type)
+        acctlist = list()
+        for acct in tmplist:
+            if acct['class'] != clas:
+                continue
+
             acct_id = acct['acct_id']
             if acct_id in ratemap:
                 acct['rate'] = math.floor(ratemap[acct_id])
@@ -121,11 +147,13 @@ class RateService:
             else:
                 acct['rate'] = 0
 
+            acctlist.append(acct)
+
         acctlist.sort(key = lambda acct : acct['rate'],reverse = True)
 
         pipe = self.rs.pipeline()
         for acct in acctlist:
-            pipe.hset('rate',acct['acct_id'],msgpack.packb(acct))
+            pipe.hset(key,acct['acct_id'],msgpack.packb(acct))
 
         pipe.execute()
 
@@ -148,6 +176,39 @@ class RateService:
             statemap[acct_id][pro_id] = state
         
         return (None,statemap)
+    
+    def map_rate(self,clas = None):
+        if clas != None:
+            qclas = [clas]
+
+        else:
+            qclas = [1,2]
+
+        cur = yield self.db.cursor()
+        yield cur.execute(('select "challenge"."acct_id","challenge"."pro_id",'
+            'max("challenge_state"."rate") as "score",'
+            'count("challenge_state") as "count" '
+            'from "challenge" '
+            'inner join "challenge_state" '
+            'on "challenge"."chal_id" = "challenge_state"."chal_id" '
+            'inner join "problem" '
+            'on "challenge"."pro_id" = "problem"."pro_id" '
+            'where "problem"."class" && %s '
+            'group by "challenge"."acct_id","challenge"."pro_id";'),
+            (qclas,))
+
+        statemap = {}
+        for acct_id,pro_id,rate,count in cur:
+            if acct_id not in statemap:
+                statemap[acct_id] = {}
+            
+            statemap[acct_id][pro_id] = {
+                'rate':rate,
+                'count':count
+            }
+        
+        return (None,statemap)
+
 
 class ScbdHandler(RequestHandler):
     def _get_level(self,ratio):

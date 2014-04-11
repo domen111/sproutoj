@@ -175,7 +175,8 @@ class UserService:
         self.rs.delete('account@%d'%acct_id)
         self.rs.delete('acctlist')
         self.rs.delete('prolist')
-        self.rs.delete('rate')
+        self.rs.delete('rate@kernel_True')
+        self.rs.delete('rate@kernel_False')
 
         return (None,None)
 

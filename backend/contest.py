@@ -63,5 +63,30 @@ class ContestService:
 class BoardHandler(RequestHandler):
     @reqenv
     def get(self):
-        self.render('board')
+        err,meta = Service.Contest.get()
+        if err:
+            self.error(err)
+            return
+
+        if meta['status'] == ContestConst.STATUS_OFFLINE:
+            self.error('Eacces')
+            return
+
+        if (meta['status'] == ContestConst.STATUS_HIDDEN and
+                self.acct['acct_type'] != UserConst.ACCTTYPE_KERNEL):
+            self.error('Eacces')
+            return
+
+        clas = meta['class']
+
+        err,prolist = yield from Service.Pro.list_pro(acct = self.acct,
+                clas = clas)
+        err,acctlist = yield from Service.Rate.list_rate(acct = self.acct,
+                clas = clas)
+        err,ratemap = yield from Service.Rate.map_rate(clas = clas)
+
+        self.render('board',
+                prolist = prolist,
+                acctlist = acctlist,
+                ratemap = ratemap)
         return

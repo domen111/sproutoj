@@ -11,7 +11,7 @@ class ManageHandler(RequestHandler):
     @reqenv
     def get(self,page = 'dash'):
         if self.acct['acct_type'] != UserConst.ACCTTYPE_KERNEL:
-            self.finish('Eacces')
+            self.error('Eacces')
             return
 
         if page == 'dash':
@@ -33,7 +33,7 @@ class ManageHandler(RequestHandler):
 
             err,pro = yield from Service.Pro.get_pro(pro_id,self.acct)
             if err:
-                self.finish(err)
+                self.error(err)
                 return
 
             self.render('manage-pro-update',page = page,pro = pro)

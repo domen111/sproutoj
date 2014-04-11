@@ -20,7 +20,7 @@ div#board{
             width:128px;
         }
         & > span.score{
-            width:64px;
+            width:96px;
         }
         & > span.pro{
             width:96px;
@@ -43,6 +43,9 @@ div#board{
             line-height:50px;
             font-weight:bold;
         }
+        & span.pro:nth-child(2n){
+            background-color:darken(@darkgray,10%);
+        }
     }
     & > div.item{
         border-top:solid 1px lighten(@gray,10%);
@@ -52,9 +55,9 @@ div#board{
         }
 
         & > span{
-            height:32px;
+            height:36px;
             display:inline-block;
-            line-height:36px;
+            line-height:38px;
         }
         & span.pro:nth-child(2n){
             background-color:@white;

@@ -26,6 +26,10 @@ class RequestHandler(tornado.web.RequestHandler):
 
         except tornado.web.HTTPError:
             self.res_json = False
+
+    def error(self,err):
+        self.finish(err)
+        return
         
     def render(self,templ,**kwargs):
         class _encoder(json.JSONEncoder):

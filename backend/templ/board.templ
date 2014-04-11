@@ -24,45 +24,26 @@
             <span class="rank">順位</span>
             <span class="name">名前</span>
             <span class="score">得点</span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
-            <span class="pro"><a href="/">1</a></span>
+        {% for pro in prolist %}
+            <span class="pro"><a href="/oj/pro/{{ pro['pro_id'] }}/">{{ pro['pro_id'] }}</a></span>
+        {% end %}
         </div>
-        {% for i in range(32) %}
+    {% for acct in acctlist %}
+    {% set acct_id = acct['acct_id'] %}
         <div class="item">
             <span class="rank">首位</span>
-            <span class="name">Faker</span>
-            <span class="score">1623</span>
-            <span class="pro">100/0</span>
-            <span class="pro">80/2</span>
-            <span class="pro">90/3</span>
-            <span class="pro">90/3</span>
-            <span class="pro">90/3</span>
-            <span class="pro">90/3</span>
-            <span class="pro">90/3</span>
-            <span class="pro">90/3</span>
-            <span class="pro">90/3</span>
-            <span class="pro">90/3</span>
-            <span class="pro">90/3</span>
-            <span class="pro">90/3</span>
-            <span class="pro">90/3</span>
-            <span class="pro">90/3</span>
-            <span class="pro">90/3</span>
-            <span class="pro">90/3</span>
-        </div>
+            <span class="name"><a href="/oj/acct/{{ acct['acct_id'] }}/">{{ acct['name'] }}</a></span>
+            <span class="score">{{ acct['rate'] }}</span>
+        {% for pro in prolist %}
+        {% set pro_id = pro['pro_id'] %}
+        {% if acct_id in ratemap and pro_id in ratemap[acct_id] %}
+        {% set rate = ratemap[acct_id][pro_id] %}
+            <span class="pro">{{ rate['rate'] }} / {{ rate['count'] }}</span>
+        {% else %}
+            <span class="pro">&nbsp</span>
         {% end %}
+        {% end %}
+        </div>
+    {% end %}
     </div>
 </div>
