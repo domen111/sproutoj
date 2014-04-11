@@ -1,8 +1,22 @@
 @import "blk-inc.less";
 
+div#index-cont{
+    font-family:'Orbitron';
+}
+div#header{
+    background-image:url("/oj/img/header.png");
+    background-size:cover;
+
+    & > h1{
+        color:#FFFFFF;
+        text-shadow:0px 0px 2px rgba(0,0,0,0.6);
+        padding:48px 0px 32px 16px;
+    }
+}
+
 div#board{
     position:relative;
-    font-family:'Orbitron';
+    padding-bottom:256px;
 
     & > div.head,& > div.item{
         min-width:100%;
