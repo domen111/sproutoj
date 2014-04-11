@@ -11,7 +11,6 @@
 	    var name = j_form.find('input.name').val();
 	    var status = j_form.find('select.status').val();
             var clas = j_form.find('select.class').val();
-            var expire = j_form.find('input.expire').val();
             var pack_type = j_form.find('select.packtype').val();
 	    var files = j_form.find('input.file')[0].files;
 	    var pack_token = '';
@@ -24,7 +23,6 @@
 		    'status':status,
                     'class':clas,
                     'pack_type':pack_type,
-                    'expire':expire,
 		    'pack_token':pack_token
 		},function(res){
                     var msg = 'Unknown';
@@ -50,10 +48,6 @@
                     }
 		});
 	    }
-
-            if(expire != ''){
-                expire = new Date(expire + ' +0800').toISOString();
-            }
 
 	    if(files.length == 0){
 		_update();
@@ -94,7 +88,6 @@
 	    <option value=1{% if pro['class'] == 1 %} selected{% end %}>Language</option>
 	    <option value=2{% if pro['class'] == 2 %} selected{% end %}>Algorithm</option>
 	</select>
-        <input type="text" class="expire" value="{% if pro['expire'] != None %}{{ pro['expire'].strftime('%Y/%m/%d %H:%M') }}{% end %}" placeholder="Expire [Year / Month / Day Hour : Minute]">
 
         <label>ファイル</label>
         <select class="packtype">

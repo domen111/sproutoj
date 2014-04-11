@@ -43,6 +43,8 @@ class PackHandler(WebSocketHandler):
             self.output = open('tmp/%s'%self.pack_token,'wb')
             self.state = PackHandler.STATE_DATA
 
+            print('test')
+
             self.write_message('S')
             return
 

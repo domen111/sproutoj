@@ -1,0 +1,63 @@
+@import "blk-inc.less";
+
+div#board{
+    overflow-x:scroll;
+    position:relative;
+    font-family:'Orbitron';
+
+    & > div.head,& > div.item{
+        min-width:100%;
+        white-space:nowrap;
+        float:left;
+
+        & > span{
+            padding-left:16px;
+        }
+        & > span.rank{
+            width:64px;
+        }
+        & > span.name{
+            width:128px;
+        }
+        & > span.score{
+            width:64px;
+        }
+        & > span.pro{
+            width:96px;
+        }
+    }
+
+    & > div.head{
+        background-color:@darkgray;
+        color:@white;
+        position:absolute;
+        top:auto;
+
+        a{
+            color:@white;
+        }
+
+        & > span{
+            height:48px;
+            display:inline-block;
+            line-height:50px;
+            font-weight:bold;
+        }
+    }
+    & > div.item{
+        border-top:solid 1px lighten(@gray,10%);
+
+        &:nth-child(2){
+            margin-top:48px;
+        }
+
+        & > span{
+            height:32px;
+            display:inline-block;
+            line-height:36px;
+        }
+        & span.pro:nth-child(2n){
+            background-color:@white;
+        }
+    }
+}

@@ -11,13 +11,8 @@
 	    var name = j_form.find('input.name').val();
 	    var status = j_form.find('select.status').val();
             var clas = j_form.find('select.class').val();
-            var expire = j_form.find('input.expire').val();
 	    var files = j_form.find('input.file')[0].files;
             
-            if(expire != ''){
-                expire = new Date(expire + ' +0800').toISOString();
-            }
-
 	    if(files.length == 0){
 		j_form.find('div.print').print('No file selected');
 		return;
@@ -35,10 +30,9 @@
                         'name':name,
                         'status':status,
                         'class':clas,
-                        'expire':expire,
                         'pack_token':pack_token
                     },function(res){
-                        msg = 'Unknown';
+                        var msg = 'Unknown';
 
                         if(res[0] == 'E'){
                             if(res == 'Enamemin'){
@@ -80,7 +74,6 @@
 	    <option value=1>Language</option>
 	    <option value=2>Algorithm</option>
 	</select>
-        <input type="text" class="expire" placeholder="Expire [Year / Month / Day Hour : Minute]">
 	<input type="file" class="file">
 	<button class="btn-con submit">Upload</button>
 	<button class="btn-def cancel">Cancel</button>

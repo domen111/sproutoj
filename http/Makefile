@@ -7,4 +7,5 @@ default:
 	lessc -x submit.less submit.css
 	lessc -x acct.less acct.css
 	lessc -x scbd.less scbd.css
+	lessc -x board.less board.css
 	lessc -x manage-pro.less manage-pro.css

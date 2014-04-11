@@ -149,17 +149,6 @@ class RateService:
         
         return (None,statemap)
 
-class RateHandler(RequestHandler):
-    @reqenv
-    def get(self):
-        err,ratelist = yield from Service.Rate.list_rate()
-        if err:
-            self.finish(err)
-            return
-
-        self.render('rate',ratelist = ratelist)
-        return
-
 class ScbdHandler(RequestHandler):
     def _get_level(self,ratio):
         l = 0

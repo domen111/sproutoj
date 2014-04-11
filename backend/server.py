@@ -2,7 +2,6 @@
 
 import math
 import pg
-import mcd
 import redis
 import tornado.ioloop
 import tornado.netutil
@@ -27,8 +26,8 @@ from pro import ChalHandler
 from pro import ChalListHandler
 from chal import ChalService
 from rate import RateService
-from rate import RateHandler
-from rate import ScbdHandler
+from contest import BoardHandler
+from contest import ContestService
 from manage import ManageHandler
 from pack import PackHandler
 from pack import PackService
@@ -113,6 +112,7 @@ if __name__ == '__main__':
     Service.Pro = ProService(db,rs)
     Service.Chal = ChalService(db,rs)
     Service.Rate = RateService(db,rs)
+    Service.Contest = ContestService(db,rs)
     Service.Pack = PackService(db,rs)
 
     args = {
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     app = tornado.web.Application([
         ('/index',IndexHandler,args),
         ('/info',InfoHandler,args),
-        ('/rate',ScbdHandler,args),
+        ('/board',BoardHandler,args),
         ('/sign',SignHandler,args),
         ('/acct/(\d+)',AcctHandler,args),
         ('/acct',AcctHandler,args),

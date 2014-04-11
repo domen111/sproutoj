@@ -39,6 +39,12 @@ class ManageHandler(RequestHandler):
             self.render('manage-pro-update',page = page,pro = pro)
             return
 
+        elif page == 'contest':
+            self.render('manage-contest',
+                    page = page,
+                    meta = Service.Contest.get()[1])
+            return
+
         elif page == 'acct':
             err,acctlist = yield from Service.Acct.list_acct(
                     UserConst.ACCTTYPE_KERNEL,True)
@@ -75,22 +81,9 @@ class ManageHandler(RequestHandler):
                 name = self.get_argument('name')
                 status = int(self.get_argument('status'))
                 clas = int(self.get_argument('class'))
-                expire = self.get_argument('expire')
+                expire = None
                 pack_token = self.get_argument('pack_token')
                 
-                if expire == '':
-                    expire = None
-
-                else:
-                    try:
-                        expire = datetime.datetime.strptime(expire,
-                                '%Y-%m-%dT%H:%M:%S.%fZ')
-                        expire = expire.replace(tzinfo = datetime.timezone.utc)
-
-                    except ValueError:
-                        self.finish('Eexpire')
-                        return
-
                 err,pro_id = yield from Service.Pro.add_pro(
                         name,status,clas,expire,pack_token)
                 if err:
@@ -105,22 +98,9 @@ class ManageHandler(RequestHandler):
                 name = self.get_argument('name')
                 status = int(self.get_argument('status'))
                 clas = int(self.get_argument('class'))
-                expire = self.get_argument('expire')
+                expire = None
                 pack_type = int(self.get_argument('pack_type'))
                 pack_token = self.get_argument('pack_token')
-
-                if expire == '':
-                    expire = None
-
-                else:
-                    try:
-                        expire = datetime.datetime.strptime(expire,
-                                '%Y-%m-%dT%H:%M:%S.%fZ')
-                        expire = expire.replace(tzinfo = datetime.timezone.utc)
-
-                    except ValueError:
-                        self.finish('Eexpire')
-                        return
 
                 if pack_token == '':
                     pack_token = None
@@ -159,6 +139,30 @@ class ManageHandler(RequestHandler):
                 self.finish('S')
                 return
 
+        elif page == 'contest':
+            reqtype = self.get_argument('reqtype')
+
+            if reqtype == 'set':
+                clas = int(self.get_argument('class'))
+                status = int(self.get_argument('status'))
+                start = self.get_argument('start')
+                end = self.get_argument('end')
+
+                err,start = self.trantime(start)
+                if err:
+                    self.finish(err)
+                    return
+
+                err,end = self.trantime(end)
+                if err:
+                    self.finish(err)
+                    return
+
+                Service.Contest.set(clas,status,start,end)
+
+                self.finish('S')
+                return
+                
         elif page == 'acct':
             reqtype = self.get_argument('reqtype')
 
@@ -183,3 +187,18 @@ class ManageHandler(RequestHandler):
 
         self.finish('Eunk')
         return
+
+    def trantime(self,time):
+        if time == '':
+            time = None
+
+        else:
+            try:
+                time = datetime.datetime.strptime(time,
+                        '%Y-%m-%dT%H:%M:%S.%fZ')
+                time = time.replace(tzinfo = datetime.timezone.utc)
+            
+            except ValueError:
+                return ('Eparam',None)
+
+        return (None,time)

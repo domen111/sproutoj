@@ -1,0 +1,68 @@
+
+<link rel='stylesheet' type='text/css' href='/oj/third/font.css'>
+<link rel="stylesheet" type="text/css" href="/oj/board.css">
+
+<script type="text/javascript" id="contjs">
+    function init(){
+        var j_board = $('#board');
+        var j_head = j_board.find('div.head');
+
+        $(window).on('scroll',function(e){
+            if(j_board.offset().top <= $(window).scrollTop()){
+                j_head.css('top',$(window).scrollTop() - j_board.offset().top);
+            }else{
+                j_head.css('top','auto');
+            }
+        });
+    }
+</script>
+
+<div class="g-lg-12">
+    <h3>ボード</h3>
+    <div id="board">
+        <div class="head">
+            <span class="rank">順位</span>
+            <span class="name">名前</span>
+            <span class="score">得点</span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+            <span class="pro"><a href="/">1</a></span>
+        </div>
+        {% for i in range(32) %}
+        <div class="item">
+            <span class="rank">首位</span>
+            <span class="name">Faker</span>
+            <span class="score">1623</span>
+            <span class="pro">100/0</span>
+            <span class="pro">80/2</span>
+            <span class="pro">90/3</span>
+            <span class="pro">90/3</span>
+            <span class="pro">90/3</span>
+            <span class="pro">90/3</span>
+            <span class="pro">90/3</span>
+            <span class="pro">90/3</span>
+            <span class="pro">90/3</span>
+            <span class="pro">90/3</span>
+            <span class="pro">90/3</span>
+            <span class="pro">90/3</span>
+            <span class="pro">90/3</span>
+            <span class="pro">90/3</span>
+            <span class="pro">90/3</span>
+            <span class="pro">90/3</span>
+        </div>
+        {% end %}
+    </div>
+</div>
