@@ -31,7 +31,7 @@
     {% for acct in acctlist %}
     {% set acct_id = acct['acct_id'] %}
         <div class="item">
-            <span class="rank">首位</span>
+            <span class="rank">{{ acct['rank'] }}</span>
             <span class="name"><a href="/oj/acct/{{ acct['acct_id'] }}/">{{ acct['name'] }}</a></span>
             <span class="score">{{ acct['rate'] }}</span>
         {% for pro in prolist %}

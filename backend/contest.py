@@ -58,7 +58,23 @@ class ContestService:
             'end':end
         },default = _mp_encoder))
 
+        self.rs.delete('rate@kernel_True')
+        self.rs.delete('rate@kernel_False')
+
         return (None,None)
+
+    def running(self):
+        err,meta = self.get()
+
+        if meta['status'] == ContestConst.STATUS_OFFLINE:
+            return (None,False)
+
+        now = datetime.datetime.now().replace(
+                tzinfo = datetime.timezone(datetime.timedelta(hours = 8)))
+        if meta['start'] > now or meta['end'] <= now:
+            return (None,False)
+
+        return (None,True)
 
 class BoardHandler(RequestHandler):
     @reqenv
@@ -84,6 +100,15 @@ class BoardHandler(RequestHandler):
         err,acctlist = yield from Service.Rate.list_rate(acct = self.acct,
                 clas = clas)
         err,ratemap = yield from Service.Rate.map_rate(clas = clas)
+
+        rank = 0
+        last_rate = None
+        for acct in acctlist:
+            if acct['rate'] != last_rate:
+                rank += 1
+                last_rate = acct['rate']
+
+            acct['rank'] = rank
 
         self.render('board',
                 prolist = prolist,
