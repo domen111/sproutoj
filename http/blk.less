@@ -498,18 +498,50 @@ div.blk-prog{
     }
 }
 
+div.tagbox{
+    padding:1px 1px;
+    background-color:@white;
+    border:@gray 1px solid;
+    font-family:monospace;
 
+    &:hover{
+	border:lighten(@gray,3%) 1px dashed;
+    }
 
-div.tagbox > div{
-    clear:both;
+    & > input{
+        width:100%;
+        font-size:@fs-sm;
+        border-width:0px;
+    }
+    & > div.sel{
+        padding:0px 4px 0px 4px;
 
-    & > div{
-	width:50%;
-	float:left;
+        & > span{
+            width:100%;
+            line-height:@fs-sm;
+            margin-bottom:4px;
+            padding:8px 8px;
+            box-sizing:border-box;
+            background-color:@blue;
+            border:darken(@blue,8%) 1px dashed;
+            border-radius:2px;
+            color:@white;
+            font-size:@fs-sm;
+            display:block;
 
-	& > div{
-	    .btn-con;
-	    .btn-sm;
-	}
+            & > span.del{
+                width:18px;
+                height:18px;
+                margin-right:4px;
+                text-align:center;
+                float:right;
+                cursor:pointer;
+                opacity:0.5;
+
+                &:hover{
+                    opacity:1;
+                }
+            }
+        }
     }
 }

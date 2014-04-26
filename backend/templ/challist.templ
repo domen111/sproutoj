@@ -7,6 +7,7 @@
     function init(){
         var j_filter = $('#filter');
 
+        j_filter.find('div.tagbox').tagbox();
         j_filter.find('button.submit').on('click',function(e){
             var proid = j_filter.find('input.proid').val();
             var acctid = j_filter.find('input.acctid').val();
@@ -40,8 +41,11 @@
             <tr>
                 <td colspan=2><input class="acctid" type="text" value="{% if flt['acct_id'] != None %}{{ flt['acct_id'] }}{% end %}" placeholder="acctid"></td>
             </tr>
+            <tr>
+                <td colspan=2><div class="tagbox"></div></td>
+            </tr>
             <tr><td colspan=2>
-                <button class="btn-con btn-sm submit">適用する</button>
+                <button class="btn-con submit">適用する</button>
             </td></tr>
         </tbody>
     </table>

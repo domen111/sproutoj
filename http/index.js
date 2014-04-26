@@ -182,4 +182,50 @@ var index = new function(){
 	    j_e.css('opacity','0');
 	},3000));
     };
+    $.fn.tagbox = function(option){
+        var i;
+
+        var j_e = this;
+        var j_input;
+        var j_list;
+        var j_opt;
+        var j_sel;
+
+        var listid = 'tagbox_dl_' + new Date().getTime() + '_' + Math.random();
+
+        j_input = $('<input type="text" placeholder="+tag"></input>');
+        j_input.attr('list',listid);
+        j_sel = $('<div class="sel"></div>')
+
+        j_input.on('keyup',function(e){
+            var j_item;
+
+            if(e.which == 13){
+                j_item = $('<span></span>');
+                j_item.text(j_input.val());
+                j_item.append($('<span class="del">&#10006;</span>'));
+                j_item.find('span.del').on('click',function(e){
+                    $(this).parent('span').remove();
+                });
+
+                j_sel.append(j_item);
+                j_input.val('');
+            }
+        });
+
+        j_list = $('<datalist></datalist>');
+        j_list.attr('id',listid);
+
+        if(option != undefined){
+            for(i = 0;i < option.length;i++){
+                j_opt = $('<option></option>');
+                j_opt.attr('value',option[i]);
+                j_list.append(j_opt);
+            }
+        }
+
+        j_e.append(j_input);
+        j_e.append(j_list);
+        j_e.append(j_sel);
+    };
 };
