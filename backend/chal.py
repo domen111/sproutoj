@@ -3,7 +3,7 @@ import json
 from tornado.gen import coroutine
 from tornado.websocket import websocket_connect
 
-from user import UserService
+from user import UserConst
 
 class ChalConst:
     STATE_AC = 1
@@ -119,7 +119,7 @@ class ChalService:
             })
         
         if (acct['acct_id'] == acct_id or
-                acct['acct_type'] == UserService.ACCTTYPE_KERNEL):
+                acct['acct_type'] == UserConst.ACCTTYPE_KERNEL):
             code_f = open('code/%d/main.cpp'%chal_id,'rb')
             code = code_f.read().decode('utf-8')
             code_f.close()
@@ -179,7 +179,7 @@ class ChalService:
 
         return (None,None)
 
-    def list_chal(self,off,num,min_accttype = UserService.ACCTTYPE_USER,
+    def list_chal(self,off,num,min_accttype = UserConst.ACCTTYPE_USER,
             flt = {'pro_id':None,'acct_id':None}):
 
         fltquery,fltarg = self._get_fltquery(flt)
@@ -232,7 +232,7 @@ class ChalService:
 
         return (None,challist)
 
-    def get_stat(self,min_accttype = UserService.ACCTTYPE_USER,flt = None):
+    def get_stat(self,min_accttype = UserConst.ACCTTYPE_USER,flt = None):
         fltquery,fltarg = self._get_fltquery(flt)
 
         cur = yield self.db.cursor()
